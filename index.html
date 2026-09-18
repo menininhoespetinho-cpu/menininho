@@ -1,0 +1,1249 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>Menininho · Gestão de Mesas</title>
+<!-- Firebase SDK (compat) — permite sincronização em tempo real entre todos os aparelhos -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* =====================================================================
+     DESIGN TOKENS — paleta baseada na logo (verde mata + dourado sobre creme)
+     ===================================================================== */
+  :root{
+    --color-primary:#1c6b3f;
+    --color-primary-dark:#124a2b;
+    --color-primary-light:#e5f1e7;
+    --color-accent:#c99a2e;
+    --color-accent-dark:#9c7519;
+    --color-accent-light:#faf1dc;
+    --color-bg:#faf7f0;
+    --color-surface:#ffffff;
+    --color-text:#20261f;
+    --color-text-muted:#6c7568;
+    --color-border:#e5e1d3;
+    --color-free:#9aa093;
+    --color-occupied:#1c6b3f;
+    --color-billing:#c1602f;
+    --color-billing-light:#fbebe1;
+    --color-danger:#b03a2a;
+    --radius-sm:8px;
+    --radius-md:14px;
+    --radius-lg:20px;
+    --shadow-sm:0 1px 2px rgba(20,30,20,.07), 0 1px 1px rgba(20,30,20,.05);
+    --shadow-md:0 6px 20px rgba(20,30,20,.10);
+    --font: 'Manrope', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+
+  *,*::before,*::after{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:var(--font);
+    background:var(--color-bg);
+    color:var(--color-text);
+    -webkit-tap-highlight-color:transparent;
+    overscroll-behavior-y:none;
+  }
+  button,input,select{font-family:inherit;}
+  button{-webkit-appearance:none;appearance:none;}
+  h1,h2,h3{font-weight:800;letter-spacing:-.01em;}
+  ::selection{background:var(--color-accent-light);}
+  :focus-visible{outline:2px solid var(--color-accent-dark);outline-offset:2px;}
+
+  #app{min-height:100vh;display:flex;flex-direction:column;}
+
+  /* ---------- topbar ---------- */
+  .topbar{
+    position:sticky;top:0;z-index:40;
+    display:flex;align-items:center;justify-content:space-between;gap:.75rem;
+    padding:.7rem 1rem;background:var(--color-surface);
+    border-bottom:1px solid var(--color-border);
+  }
+  .brand{display:flex;align-items:center;gap:.6rem;min-width:0;}
+  .brand-mark{
+    font-size:1.5rem;width:2.4rem;height:2.4rem;border-radius:999px;
+    background:var(--color-primary-light);display:flex;align-items:center;justify-content:center;flex:0 0 auto;
+  }
+  .brand-text{min-width:0;}
+  .brand-text strong{display:block;font-size:1rem;line-height:1.1;}
+  .brand-text small{display:block;color:var(--color-text-muted);font-size:.7rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .topnav{display:flex;gap:.4rem;flex:0 0 auto;}
+  .navbtn{
+    border:1.5px solid var(--color-border);background:transparent;padding:.5rem .85rem;
+    border-radius:999px;font-weight:700;font-size:.8rem;cursor:pointer;color:var(--color-text-muted);
+  }
+  .navbtn.active{background:var(--color-primary);border-color:var(--color-primary);color:#fff;}
+
+  main.view{flex:1;width:100%;max-width:1180px;margin:0 auto;padding:1rem;padding-bottom:6.5rem;}
+
+  /* ---------- toast ---------- */
+  #toast{
+    position:fixed;left:50%;top:.9rem;transform:translate(-50%,-140%);
+    background:var(--color-text);color:#fff;padding:.6rem 1.1rem;border-radius:999px;
+    font-size:.85rem;font-weight:700;z-index:200;box-shadow:var(--shadow-md);
+    transition:transform .25s ease;pointer-events:none;
+  }
+  #toast.show{transform:translate(-50%,0);}
+
+  /* ---------- stats ---------- */
+  .stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.6rem;margin-bottom:1.1rem;}
+  @media(min-width:680px){.stats-grid{grid-template-columns:repeat(3,1fr);}}
+  @media(min-width:980px){.stats-grid{grid-template-columns:repeat(6,1fr);}}
+  .stat-card{
+    background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);
+    padding:.8rem .95rem;box-shadow:var(--shadow-sm);
+  }
+  .stat-card .stat-value{font-size:1.35rem;font-weight:800;line-height:1.15;}
+  .stat-card .stat-label{font-size:.72rem;color:var(--color-text-muted);margin-top:.2rem;font-weight:700;}
+  .stat-card.highlight{background:var(--color-primary);border-color:var(--color-primary);}
+  .stat-card.highlight .stat-value,.stat-card.highlight .stat-label{color:#fff;}
+  .stat-card.highlight .stat-label{opacity:.85;}
+
+  /* ---------- chips ---------- */
+  .chip-row{display:flex;gap:.5rem;overflow-x:auto;padding:.1rem .1rem .6rem;margin-bottom:.4rem;scrollbar-width:none;}
+  .chip-row::-webkit-scrollbar{display:none;}
+  .chip{
+    flex:0 0 auto;border:1.5px solid var(--color-border);background:var(--color-surface);
+    padding:.45rem .95rem;border-radius:999px;font-size:.8rem;font-weight:700;color:var(--color-text-muted);
+    cursor:pointer;white-space:nowrap;
+  }
+  .chip.active{background:var(--color-text);border-color:var(--color-text);color:#fff;}
+
+  /* ---------- tables grid ---------- */
+  .tables-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.7rem;}
+  @media(min-width:560px){.tables-grid{grid-template-columns:repeat(3,1fr);}}
+  @media(min-width:860px){.tables-grid{grid-template-columns:repeat(4,1fr);}}
+  @media(min-width:1140px){.tables-grid{grid-template-columns:repeat(5,1fr);}}
+
+  .table-card{
+    text-align:left;cursor:pointer;border-radius:var(--radius-lg);padding:1rem;
+    background:var(--color-surface);border:1.5px solid var(--color-border);box-shadow:var(--shadow-sm);
+    display:flex;flex-direction:column;gap:.55rem;min-height:118px;position:relative;
+    transition:transform .1s ease;
+  }
+  .table-card:active{transform:scale(.96);}
+  .table-card-top{display:flex;align-items:center;justify-content:space-between;}
+  .table-number{font-weight:800;font-size:1.05rem;}
+  .status-dot{width:.6rem;height:.6rem;border-radius:50%;background:var(--color-free);flex:0 0 auto;}
+  .table-card.status-occupied{border-color:var(--color-primary);background:var(--color-primary-light);}
+  .table-card.status-occupied .status-dot{background:var(--color-occupied);}
+  .table-card.status-billing{border-color:var(--color-billing);background:var(--color-billing-light);}
+  .table-card.status-billing .status-dot{background:var(--color-billing);}
+  .table-status-label{font-size:.7rem;font-weight:800;letter-spacing:.02em;color:var(--color-text-muted);}
+  .table-card.status-occupied .table-status-label{color:var(--color-primary-dark);}
+  .table-card.status-billing .table-status-label{color:var(--color-billing);}
+  .table-total{margin-top:auto;font-size:1.25rem;font-weight:800;}
+  .table-meta{font-size:.7rem;color:var(--color-text-muted);font-weight:600;}
+
+  /* ---------- table view ---------- */
+  .table-header{display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;}
+  .iconbtn{
+    width:2.5rem;height:2.5rem;border-radius:999px;border:1.5px solid var(--color-border);
+    background:var(--color-surface);display:flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto;color:var(--color-text);
+  }
+  .table-header h1{margin:0;font-size:1.25rem;}
+  .status-badge{display:inline-block;margin-top:.2rem;padding:.15rem .6rem;border-radius:999px;font-size:.68rem;font-weight:800;letter-spacing:.02em;background:var(--color-primary-light);color:var(--color-primary-dark);}
+  .status-badge.st-free{background:#eef0eb;color:var(--color-text-muted);}
+  .status-badge.st-billing{background:var(--color-billing-light);color:var(--color-billing);}
+
+  .table-total-banner{
+    background:var(--color-text);color:#fff;border-radius:var(--radius-lg);padding:1rem 1.25rem;
+    display:flex;justify-content:space-between;align-items:center;margin-bottom:.85rem;
+  }
+  .table-total-banner span{opacity:.7;font-size:.8rem;font-weight:700;}
+  .table-total-banner strong{font-size:1.65rem;}
+
+  .table-actions{display:flex;gap:.6rem;margin-bottom:1.1rem;flex-wrap:wrap;}
+  .btn{border:none;border-radius:999px;padding:.7rem 1.25rem;font-weight:800;font-size:.85rem;cursor:pointer;}
+  .btn-primary{background:var(--color-primary);color:#fff;}
+  .btn-accent{background:var(--color-accent);color:#2b2110;}
+  .btn-outline{background:transparent;border:1.5px solid var(--color-border);color:var(--color-text);}
+  .btn-danger-outline{background:transparent;border:1.5px solid var(--color-danger);color:var(--color-danger);}
+  .btn-block{width:100%;}
+  .btn:disabled{opacity:.4;cursor:not-allowed;}
+
+  .table-body{display:flex;flex-direction:column;gap:1rem;}
+  @media(min-width:960px){
+    .table-body{flex-direction:row;align-items:flex-start;}
+    .menu-panel{flex:1;min-width:0;}
+    .cart-panel{width:340px;flex:0 0 340px;position:sticky;top:4.6rem;}
+  }
+
+  .search-input-wrap{position:relative;margin-bottom:.6rem;}
+  .search-input-wrap svg{position:absolute;left:.85rem;top:50%;transform:translateY(-50%);color:var(--color-text-muted);}
+  .search-input-wrap input{
+    width:100%;padding:.75rem 1rem .75rem 2.6rem;border-radius:999px;border:1.5px solid var(--color-border);
+    font-size:.92rem;background:var(--color-surface);
+  }
+
+  .menu-section-title{font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;color:var(--color-text-muted);margin:1.1rem 0 .55rem;font-weight:800;}
+  .menu-section-title:first-child{margin-top:0;}
+  .menu-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.65rem;}
+  @media(min-width:520px){.menu-grid{grid-template-columns:repeat(3,1fr);}}
+  @media(min-width:1140px){.menu-grid{grid-template-columns:repeat(4,1fr);}}
+
+  .product-card{
+    position:relative;background:var(--color-surface);border:1.5px solid var(--color-border);
+    border-radius:var(--radius-md);padding:.95rem .6rem .8rem;display:flex;flex-direction:column;
+    align-items:center;text-align:center;gap:.3rem;cursor:pointer;user-select:none;box-shadow:var(--shadow-sm);
+  }
+  .product-card:active{transform:scale(.96);}
+  .product-card.has-qty{border-color:var(--color-primary);background:var(--color-primary-light);}
+  .product-icon{font-size:1.85rem;line-height:1;}
+  .product-name{font-size:.8rem;font-weight:700;line-height:1.2;min-height:2.1em;display:flex;align-items:center;}
+  .product-price{font-size:.78rem;color:var(--color-text-muted);font-weight:700;}
+  .qty-badge{
+    position:absolute;top:-.45rem;right:-.45rem;background:var(--color-accent);color:#2b2110;font-weight:800;
+    font-size:.78rem;min-width:1.5rem;height:1.5rem;border-radius:999px;display:flex;align-items:center;justify-content:center;
+    border:2px solid var(--color-bg);padding:0 .25rem;
+  }
+  .qty-minus-btn{
+    position:absolute;bottom:.45rem;left:.45rem;width:1.55rem;height:1.55rem;border-radius:999px;background:#fff;
+    border:1.5px solid var(--color-border);display:flex;align-items:center;justify-content:center;color:var(--color-text);
+  }
+  .empty-note{color:var(--color-text-muted);font-size:.88rem;text-align:center;padding:1.5rem .5rem;}
+
+  .cart-panel{background:var(--color-surface);border:1.5px solid var(--color-border);border-radius:var(--radius-lg);padding:1rem;box-shadow:var(--shadow-sm);}
+  .cart-panel h2{font-size:.98rem;margin:0 0 .7rem;}
+  .cart-item{display:flex;align-items:center;gap:.6rem;padding:.55rem 0;border-bottom:1px solid var(--color-border);}
+  .cart-item:last-child{border-bottom:none;}
+  .cart-item-info{flex:1;min-width:0;}
+  .cart-item-name{font-weight:700;font-size:.85rem;}
+  .cart-item-sub{font-size:.74rem;color:var(--color-text-muted);font-weight:600;}
+  .qty-stepper{display:flex;align-items:center;gap:.35rem;flex:0 0 auto;}
+  .stepper-btn{width:1.75rem;height:1.75rem;border-radius:999px;border:1.5px solid var(--color-border);background:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--color-text);}
+  .stepper-value{min-width:1.3rem;text-align:center;font-weight:800;font-size:.88rem;}
+  .cart-item-remove{width:1.75rem;height:1.75rem;border-radius:999px;border:none;background:transparent;color:var(--color-danger);display:flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto;}
+  .cart-subtotal-row{display:flex;justify-content:space-between;font-weight:800;padding-top:.65rem;margin-top:.2rem;border-top:1.5px dashed var(--color-border);font-size:.95rem;}
+  .confirmed-list{margin-top:.9rem;padding-top:.85rem;border-top:1.5px solid var(--color-border);}
+  .confirmed-list h3{font-size:.74rem;text-transform:uppercase;letter-spacing:.03em;color:var(--color-text-muted);margin:0 0 .5rem;font-weight:800;}
+  .confirmed-line{display:flex;justify-content:space-between;font-size:.82rem;padding:.22rem 0;font-weight:600;}
+  .confirmed-line span:last-child{font-weight:800;}
+
+  .mobile-send-bar{
+    position:fixed;left:0;right:0;bottom:0;background:var(--color-text);color:#fff;padding:.75rem .9rem;
+    display:flex;align-items:center;justify-content:space-between;gap:.8rem;z-index:60;box-shadow:0 -4px 16px rgba(0,0,0,.18);
+  }
+  .mobile-send-bar .msb-info{font-size:.78rem;opacity:.85;font-weight:700;}
+  .mobile-send-bar strong{display:block;font-size:1.05rem;}
+  .mobile-send-bar .btn{white-space:nowrap;}
+  @media(min-width:960px){.mobile-send-bar{display:none;}}
+
+  /* ---------- admin ---------- */
+  .admin-tabs{display:flex;gap:.5rem;margin-bottom:1rem;overflow-x:auto;}
+  .admin-panel{background:var(--color-surface);border:1.5px solid var(--color-border);border-radius:var(--radius-lg);padding:1rem;margin-bottom:1rem;}
+  .admin-panel h2{font-size:1rem;margin:0 0 .8rem;}
+  .form-row{display:flex;flex-wrap:wrap;gap:.55rem;margin-bottom:1rem;}
+  .form-row input,.form-row select{
+    flex:1 1 130px;padding:.62rem .8rem;border-radius:.65rem;border:1.5px solid var(--color-border);font-size:.87rem;background:var(--color-bg);
+  }
+  .form-row .btn{flex:0 0 auto;}
+  .admin-list-row{display:flex;align-items:center;gap:.7rem;padding:.65rem 0;border-bottom:1px solid var(--color-border);flex-wrap:wrap;}
+  .admin-list-row:last-child{border-bottom:none;}
+  .admin-row-main{flex:1;min-width:160px;}
+  .admin-row-main strong{display:block;font-size:.9rem;}
+  .admin-row-main small{color:var(--color-text-muted);font-weight:600;font-size:.76rem;}
+  .admin-row-actions{display:flex;gap:.4rem;flex:0 0 auto;}
+  .icon-small-btn{border:1.5px solid var(--color-border);background:#fff;border-radius:.6rem;width:2.15rem;height:2.15rem;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--color-text);}
+  .icon-small-btn.danger{color:var(--color-danger);border-color:var(--color-danger);}
+  .icon-small-btn:disabled{opacity:.35;cursor:not-allowed;}
+  .edit-row{display:flex;flex-wrap:wrap;gap:.5rem;width:100%;padding:.5rem 0;}
+  .edit-row input,.edit-row select{flex:1 1 110px;padding:.5rem .7rem;border-radius:.55rem;border:1.5px solid var(--color-border);font-size:.85rem;}
+  .category-group-title{font-size:.72rem;text-transform:uppercase;letter-spacing:.03em;color:var(--color-text-muted);font-weight:800;margin:1rem 0 .3rem;}
+  .category-group-title:first-child{margin-top:0;}
+
+  .history-card{background:var(--color-surface);border:1.5px solid var(--color-border);border-radius:var(--radius-md);padding:.85rem 1rem;margin-bottom:.65rem;}
+  .history-card-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:.35rem;}
+  .history-card-top strong{font-size:.95rem;}
+  .history-card-top span{font-weight:800;color:var(--color-primary-dark);}
+  .history-card time{font-size:.74rem;color:var(--color-text-muted);font-weight:600;}
+  .history-items{font-size:.8rem;color:var(--color-text-muted);margin-top:.35rem;line-height:1.5;}
+
+  .empty-state{text-align:center;padding:2.4rem 1rem;color:var(--color-text-muted);}
+  .empty-state .emoji{font-size:2.2rem;display:block;margin-bottom:.5rem;}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast"></div>
+
+<script>
+/* =========================================================================
+   MENININHO · SISTEMA DE GESTÃO DE MESAS
+   Arquivo único (HTML + CSS + JS) — protótipo funcional.
+
+   Organização do JavaScript:
+     1. UTILITÁRIOS
+     2. ÍCONES (SVG inline)
+     3. DADOS INICIAIS (seed)
+     4. CAMADA DE BANCO DE DADOS (Database) — hoje localStorage,
+        preparada para futura troca por Firebase/Supabase em tempo real.
+     5. ESTADO DA APLICAÇÃO (cache local + UI state)
+     6. REGRAS DE NEGÓCIO (actions que chamam o Database)
+     7. RENDERIZAÇÃO (views)
+     8. EVENTOS (delegação de eventos)
+     9. INICIALIZAÇÃO
+   ========================================================================= */
+
+/* ============================== 1. UTILITÁRIOS ========================== */
+const Utils = {
+  formatCurrency(value){
+    return 'R$ ' + (Number(value)||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  },
+  pad2(n){ return String(n).padStart(2,'0'); },
+  uid(prefix){ return prefix + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); },
+  isSameDay(iso, ref){
+    if(!iso) return false;
+    const a = new Date(iso), b = ref || new Date();
+    return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
+  },
+  formatDateTime(iso){
+    if(!iso) return '';
+    const d = new Date(iso);
+    return d.toLocaleDateString('pt-BR') + ' · ' + d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  },
+  formatTime(iso){
+    if(!iso) return '';
+    return new Date(iso).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  },
+  clamp(n,min,max){ return Math.min(Math.max(n,min),max); },
+  escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+};
+
+/* ============================== 2. ÍCONES =============================== */
+const Icons = {
+  back: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>',
+  search: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>',
+  plus: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  minus: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M5 12h14"/></svg>',
+  trash: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16Z"/></svg>',
+  edit: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"/></svg>',
+  check: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>',
+  close: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>'
+};
+
+/* ========================= 3. DADOS INICIAIS (SEED) ====================== */
+const CATEGORIES = [
+  {id:'espetinhos',    label:'Espetinhos'},
+  {id:'porcoes',       label:'Porções'},
+  {id:'bebidas',       label:'Bebidas'},
+  {id:'refrigerantes', label:'Refrigerantes'},
+  {id:'sucos',         label:'Sucos'},
+  {id:'outros',        label:'Outros'}
+];
+const DEFAULT_ICON_BY_CATEGORY = {
+  espetinhos:'🍢', porcoes:'🍟', bebidas:'🍺', refrigerantes:'🥤', sucos:'🧃', outros:'🍽️'
+};
+
+function categoryLabel(id){
+  const c = CATEGORIES.find(c=>c.id===id);
+  return c ? c.label : 'Outros';
+}
+
+function buildSeedProducts(){
+  // Usado apenas UMA VEZ, para popular o Firestore quando a coleção "products" estiver vazia.
+  return [
+    {name:'Espetinho de Carne',     category:'espetinhos',    price:8.00,  icon:'🍢'},
+    {name:'Espetinho de Frango',    category:'espetinhos',    price:7.00,  icon:'🍗'},
+    {name:'Espetinho de Queijo',    category:'espetinhos',    price:7.50,  icon:'🧀'},
+    {name:'Espetinho de Calabresa', category:'espetinhos',    price:7.00,  icon:'🌭'},
+    {name:'Batata Frita',           category:'porcoes',       price:18.00, icon:'🍟'},
+    {name:'Macaxeira',              category:'porcoes',       price:15.00, icon:'🥔'},
+    {name:'Caldo',                  category:'porcoes',       price:12.00, icon:'🍲'},
+    {name:'Porção Especial',        category:'porcoes',       price:38.00, icon:'🍽️'},
+    {name:'Coca-Cola',              category:'refrigerantes', price:6.00,  icon:'🥤'},
+    {name:'Coca-Cola Zero',         category:'refrigerantes', price:6.00,  icon:'🥤'},
+    {name:'Guaraná',                category:'refrigerantes', price:6.00,  icon:'🥤'},
+    {name:'Refrigerante Lata',      category:'refrigerantes', price:5.00,  icon:'🥫'},
+    {name:'Água',                   category:'bebidas',       price:4.00,  icon:'💧'},
+    {name:'Suco',                   category:'sucos',         price:7.50,  icon:'🧃'},
+    {name:'Cerveja',                category:'bebidas',       price:8.00,  icon:'🍺'}
+  ];
+}
+
+/* ==================== 4. CAMADA DE BANCO DE DADOS ======================== */
+/*
+  Abstração de persistência. Toda a aplicação fala apenas com "Database",
+  nunca diretamente com o Firestore. Isso é o que permitiu trocar o motor
+  de localStorage (protótipo) para Firebase/Firestore (tempo real de
+  verdade) sem alterar UMA LINHA sequer de State, Actions, Render ou
+  Eventos — só esta seção mudou.
+
+  Cada coleção do Firestore tem um listener onSnapshot() que mantém um
+  cache local sempre atualizado e dispara notify() sempre que os dados
+  mudam — seja porque este próprio aparelho escreveu algo, seja porque
+  outro garçom/caixa escreveu em outro dispositivo. É isso que resolve o
+  requisito de "vários aparelhos ao mesmo tempo".
+*/
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCnjjRbtEowFWJbPe_xnkPTmIVKQU7559M",
+  authDomain: "espetinhomenininho.firebaseapp.com",
+  projectId: "espetinhomenininho",
+  storageBucket: "espetinhomenininho.firebasestorage.app",
+  messagingSenderId: "908927603397",
+  appId: "1:908927603397:web:5d7db10699ec40737756ac"
+};
+
+firebase.initializeApp(FIREBASE_CONFIG);
+const firestore = firebase.firestore();
+
+const Database = (function(){
+  const listeners = [];
+  const cache = {tables:[], products:[], history:[]};
+  const ready = {tables:false, products:false, history:false};
+
+  function isReady(){ return ready.tables && ready.products && ready.history; }
+
+  function notify(){
+    if(!isReady()) return; // evita renderizar telas parciais antes da primeira carga
+    listeners.forEach(fn => { try{ fn(); }catch(e){ console.error(e); } });
+  }
+
+  function itemsTotal(items){
+    return (items||[]).reduce((sum,i)=> sum + (i.unitPrice*i.quantity), 0);
+  }
+
+  function findTable(tableId){
+    const t = cache.tables.find(t=>t.id===tableId);
+    if(!t) throw new Error('Mesa não encontrada: '+tableId);
+    return t;
+  }
+  function findProduct(productId){
+    const p = cache.products.find(p=>p.id===productId);
+    if(!p) throw new Error('Produto não encontrado');
+    return p;
+  }
+
+  const tablesRef = firestore.collection('tables');
+  const productsRef = firestore.collection('products');
+  const historyRef = firestore.collection('history');
+
+  function onSnapshotError(label){
+    return (err) => {
+      console.error('Erro ao ouvir "'+label+'":', err);
+      showToast('Erro de conexão com o Firebase (' + label + ')');
+    };
+  }
+
+  tablesRef.onSnapshot(snap => {
+    cache.tables = snap.docs
+      .map(doc => { const d=doc.data(); return {id:doc.id, number:d.number, status:d.status, openedAt:d.openedAt||null, orderItems:d.orderItems||[], draft:d.draft||[]}; })
+      .sort((a,b)=> a.number-b.number);
+    ready.tables = true; notify();
+  }, onSnapshotError('mesas'));
+
+  productsRef.onSnapshot(snap => {
+    cache.products = snap.docs.map(doc => { const d=doc.data(); return {id:doc.id, name:d.name, category:d.category, price:d.price, icon:d.icon}; });
+    ready.products = true; notify();
+  }, onSnapshotError('produtos'));
+
+  historyRef.onSnapshot(snap => {
+    cache.history = snap.docs
+      .map(doc => { const d=doc.data(); return {id:doc.id, tableNumber:d.tableNumber, closedAt:d.closedAt, total:d.total, items:d.items||[]}; })
+      .sort((a,b)=> new Date(b.closedAt)-new Date(a.closedAt));
+    ready.history = true; notify();
+  }, onSnapshotError('histórico'));
+
+  // Semeia o cardápio e as 12 mesas na primeira vez que o banco é usado
+  // (coleções vazias). Não roda de novo depois disso.
+  async function ensureSeed(){
+    const [pSnap, tSnap] = await Promise.all([productsRef.limit(1).get(), tablesRef.limit(1).get()]);
+    if(pSnap.empty){
+      const batch = firestore.batch();
+      buildSeedProducts().forEach(p => batch.set(productsRef.doc(), p));
+      await batch.commit();
+    }
+    if(tSnap.empty){
+      const batch = firestore.batch();
+      for(let n=1; n<=12; n++){ batch.set(tablesRef.doc(), {number:n, status:'free', openedAt:null, orderItems:[], draft:[]}); }
+      await batch.commit();
+    }
+  }
+  ensureSeed().catch(err => { console.error('Falha ao semear dados iniciais', err); showToast('Não foi possível preparar os dados iniciais no Firebase'); });
+
+  return {
+    // ---- assinatura de mudanças em tempo real (onSnapshot) ----
+    subscribe(fn){
+      listeners.push(fn);
+      if(isReady()) fn(); // já havia dados: entrega o estado atual imediatamente
+      return () => { const i=listeners.indexOf(fn); if(i>=0) listeners.splice(i,1); };
+    },
+    isReady,
+
+    // ---- leitura (a partir do cache mantido pelo onSnapshot) ----
+    async getTables(){ return JSON.parse(JSON.stringify(cache.tables)); },
+    async getTable(tableId){ return JSON.parse(JSON.stringify(findTable(tableId))); },
+    async getProducts(){ return JSON.parse(JSON.stringify(cache.products)); },
+    async getHistory(){ return JSON.parse(JSON.stringify(cache.history)); },
+
+    // ---- pedido / carrinho ----
+    async addDraftItem(tableId, productId){
+      const t = findTable(tableId);
+      const product = findProduct(productId);
+      const draft = t.draft.map(i=>({...i}));
+      const existing = draft.find(i=>i.productId===productId);
+      if(existing) existing.quantity += 1;
+      else draft.push({productId, name:product.name, unitPrice:product.price, quantity:1});
+      await tablesRef.doc(tableId).update({draft});
+    },
+    async setDraftQty(tableId, productId, qty){
+      const t = findTable(tableId);
+      qty = Math.max(0, Math.floor(qty));
+      let draft = t.draft.map(i=>({...i}));
+      if(qty === 0) draft = draft.filter(i=>i.productId!==productId);
+      else { const existing = draft.find(i=>i.productId===productId); if(existing) existing.quantity = qty; }
+      await tablesRef.doc(tableId).update({draft});
+    },
+    async removeDraftItem(tableId, productId){
+      const t = findTable(tableId);
+      const draft = t.draft.filter(i=>i.productId!==productId);
+      await tablesRef.doc(tableId).update({draft});
+    },
+    async sendOrder(tableId){
+      const t = findTable(tableId);
+      if(!t.draft.length) return;
+      const orderItems = t.orderItems.map(i=>({...i}));
+      t.draft.forEach(di => {
+        const existing = orderItems.find(i=>i.productId===di.productId);
+        if(existing) existing.quantity += di.quantity;
+        else orderItems.push({...di});
+      });
+      const patch = {orderItems, draft:[]};
+      if(t.status === 'free'){ patch.status = 'occupied'; patch.openedAt = new Date().toISOString(); }
+      await tablesRef.doc(tableId).update(patch);
+    },
+    async requestBill(tableId){
+      await tablesRef.doc(tableId).update({status:'billing'});
+    },
+    async closeTable(tableId){
+      const t = findTable(tableId);
+      const total = itemsTotal(t.orderItems);
+      if(total > 0){
+        await historyRef.add({tableNumber:t.number, closedAt:new Date().toISOString(), total, items:t.orderItems});
+      }
+      await tablesRef.doc(tableId).update({status:'free', openedAt:null, orderItems:[], draft:[]});
+    },
+
+    // ---- administração: mesas ----
+    async addTable(number){
+      await tablesRef.add({number, status:'free', openedAt:null, orderItems:[], draft:[]});
+    },
+    async updateTable(tableId, patch){
+      await tablesRef.doc(tableId).update(patch);
+    },
+    async removeTable(tableId){
+      const t = findTable(tableId);
+      if(t.status !== 'free') throw new Error('Só é possível remover mesas livres.');
+      await tablesRef.doc(tableId).delete();
+    },
+
+    // ---- administração: produtos ----
+    async addProduct(payload){
+      await productsRef.add({
+        name:payload.name, category:payload.category,
+        price:Number(payload.price)||0, icon: payload.icon || DEFAULT_ICON_BY_CATEGORY[payload.category] || '🍽️'
+      });
+    },
+    async updateProduct(productId, patch){
+      await productsRef.doc(productId).update(patch);
+    },
+    async removeProduct(productId){
+      await productsRef.doc(productId).delete();
+    },
+
+    // ---- utilidades internas ----
+    _itemsTotal: itemsTotal
+  };
+})();
+
+/* ===================== 5. ESTADO DA APLICAÇÃO ============================ */
+const State = {
+  view:'dashboard',            // 'dashboard' | 'table' | 'admin'
+  currentTableId:null,
+  tableStatusFilter:'all',     // all | free | occupied | billing
+  productSearch:'',
+  productCategory:'all',
+  adminTab:'mesas',            // mesas | produtos | historico
+  editingTableId:null,
+  editingProductId:null,
+
+  // valores "em digitação" nos formulários de administração — guardados aqui
+  // (e não só no DOM) para não serem perdidos quando um re-render é disparado
+  // por uma mudança vinda de OUTRO aparelho enquanto alguém está editando.
+  addTableDraft:'',
+  addProductDraft:{icon:'', name:'', category:'espetinhos', price:''},
+  editTableDraft:'',
+  editProductDraft:{icon:'', name:'', category:'espetinhos', price:''},
+
+  // cache local, mantido em sincronia pelo Database.subscribe
+  tables:[], products:[], history:[]
+};
+
+async function refreshCache(){
+  State.tables = await Database.getTables();
+  State.products = await Database.getProducts();
+  State.history = await Database.getHistory();
+}
+
+/* ========================= 6. REGRAS DE NEGÓCIO ========================== */
+function calcItemsTotal(items){ return (items||[]).reduce((s,i)=> s + i.unitPrice*i.quantity, 0); }
+
+function getTableGrandTotal(table){
+  return calcItemsTotal(table.orderItems) + calcItemsTotal(table.draft);
+}
+
+function getDashboardStats(){
+  const free = State.tables.filter(t=>t.status==='free').length;
+  const occupied = State.tables.filter(t=>t.status==='occupied').length;
+  const billing = State.tables.filter(t=>t.status==='billing').length;
+  const todayEntries = State.history.filter(h=>Utils.isSameDay(h.closedAt));
+  const revenueToday = todayEntries.reduce((s,h)=> s + h.total, 0);
+  const ordersToday = todayEntries.length;
+  const avgTicket = ordersToday ? revenueToday/ordersToday : 0;
+  return {free, occupied, billing, revenueToday, ordersToday, avgTicket};
+}
+
+const Actions = {
+  async goToDashboard(){ State.view='dashboard'; State.currentTableId=null; render(); },
+  async openTable(tableId){ State.view='table'; State.currentTableId=tableId; State.productSearch=''; State.productCategory='all'; render(); },
+  async openAdmin(){ State.view='admin'; render(); },
+
+  async addToCart(tableId, productId){
+    await Database.addDraftItem(tableId, productId);
+  },
+  async decFromCart(tableId, productId, currentQty){
+    await Database.setDraftQty(tableId, productId, currentQty - 1);
+  },
+  async setCartQty(tableId, productId, qty){
+    await Database.setDraftQty(tableId, productId, qty);
+  },
+  async removeFromCart(tableId, productId){
+    await Database.removeDraftItem(tableId, productId);
+  },
+  async sendOrder(tableId){
+    await Database.sendOrder(tableId);
+    showToast('Pedido enviado ✓');
+  },
+  async requestBill(tableId){
+    await Database.requestBill(tableId);
+    showToast('Conta solicitada');
+  },
+  async finalizeTable(tableId, total, number){
+    const ok = confirm('Finalizar a conta da Mesa '+Utils.pad2(number)+' no valor de '+Utils.formatCurrency(total)+' e liberar a mesa?\n\nEsta ação não pode ser desfeita.');
+    if(!ok) return;
+    await Database.closeTable(tableId);
+    showToast('Mesa '+Utils.pad2(number)+' liberada ✓');
+    Actions.goToDashboard();
+  }
+};
+
+/* =============================== TOAST =================================== */
+let toastTimer = null;
+function showToast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> el.classList.remove('show'), 2200);
+}
+
+/* ============================ 7. RENDERIZAÇÃO ============================ */
+function render(){
+  // preserva foco/cursor de um eventual input em edição durante o re-render
+  const active = document.activeElement;
+  const activeId = active && active.id;
+  const selStart = active && typeof active.selectionStart === 'number' ? active.selectionStart : null;
+  const selEnd = active && typeof active.selectionEnd === 'number' ? active.selectionEnd : null;
+
+  const app = document.getElementById('app');
+  app.innerHTML = renderTopbar() + '<main class="view">' + renderCurrentView() + '</main>';
+
+  if(activeId){
+    const el = document.getElementById(activeId);
+    if(el){
+      el.focus();
+      if(selStart!=null && el.setSelectionRange){
+        try{ el.setSelectionRange(selStart, selEnd); }catch(e){}
+      }
+    }
+  }
+}
+
+function renderTopbar(){
+  return `
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">🍢</div>
+      <div class="brand-text">
+        <strong>Menininho</strong>
+        <small>Espetinho &amp; Conveniência</small>
+      </div>
+    </div>
+    <nav class="topnav">
+      <button class="navbtn ${State.view==='dashboard'?'active':''}" data-nav="dashboard">Painel</button>
+      <button class="navbtn ${State.view==='admin'?'active':''}" data-nav="admin">Administração</button>
+    </nav>
+  </header>`;
+}
+
+function renderCurrentView(){
+  if(State.view==='table' && State.currentTableId) return renderTableView();
+  if(State.view==='admin') return renderAdminView();
+  return renderDashboardView();
+}
+
+/* ---------------------------- DASHBOARD ---------------------------- */
+function renderDashboardView(){
+  const stats = getDashboardStats();
+  const filters = [
+    {id:'all', label:'Todas'},
+    {id:'free', label:'Livres'},
+    {id:'occupied', label:'Ocupadas'},
+    {id:'billing', label:'Conta pedida'}
+  ];
+  const filtered = State.tables
+    .filter(t => State.tableStatusFilter==='all' || t.status===State.tableStatusFilter)
+    .sort((a,b)=> a.number-b.number);
+
+  return `
+    <section class="stats-grid">
+      ${statCard(stats.free, 'Mesas livres')}
+      ${statCard(stats.occupied, 'Mesas ocupadas')}
+      ${statCard(stats.billing, 'Contas solicitadas')}
+      ${statCard(Utils.formatCurrency(stats.revenueToday), 'Faturamento hoje', true)}
+      ${statCard(stats.ordersToday, 'Pedidos hoje')}
+      ${statCard(Utils.formatCurrency(stats.avgTicket), 'Ticket médio')}
+    </section>
+
+    <div class="chip-row">
+      ${filters.map(f=>`<button class="chip ${State.tableStatusFilter===f.id?'active':''}" data-set-table-filter="${f.id}">${f.label}</button>`).join('')}
+    </div>
+
+    ${filtered.length ? `<section class="tables-grid">${filtered.map(renderTableCard).join('')}</section>` :
+      `<div class="empty-state"><span class="emoji">🪑</span>Nenhuma mesa encontrada para este filtro.</div>`}
+  `;
+}
+
+function statCard(value, label, highlight){
+  return `<div class="stat-card ${highlight?'highlight':''}">
+    <div class="stat-value">${value}</div>
+    <div class="stat-label">${label}</div>
+  </div>`;
+}
+
+const STATUS_LABEL = {free:'Livre', occupied:'Ocupada', billing:'Conta solicitada'};
+
+function renderTableCard(table){
+  const total = getTableGrandTotal(table);
+  const itemCount = (table.orderItems||[]).reduce((s,i)=>s+i.quantity,0) + (table.draft||[]).reduce((s,i)=>s+i.quantity,0);
+  return `
+    <button class="table-card status-${table.status}" data-open-table="${table.id}">
+      <div class="table-card-top">
+        <span class="table-number">Mesa ${Utils.pad2(table.number)}</span>
+        <span class="status-dot"></span>
+      </div>
+      <div class="table-status-label">${STATUS_LABEL[table.status]}</div>
+      <div class="table-total">${Utils.formatCurrency(total)}</div>
+      ${itemCount ? `<div class="table-meta">${itemCount} ${itemCount===1?'item':'itens'}</div>` : ''}
+    </button>`;
+}
+
+/* ---------------------------- TELA DA MESA ---------------------------- */
+function renderTableView(){
+  const table = State.tables.find(t=>t.id===State.currentTableId);
+  if(!table){ State.view='dashboard'; return renderDashboardView(); }
+
+  const grandTotal = getTableGrandTotal(table);
+  const badgeClass = table.status==='free' ? 'st-free' : (table.status==='billing' ? 'st-billing' : '');
+
+  let actionsHtml = '';
+  if(table.status === 'occupied'){
+    actionsHtml = `<button class="btn btn-accent" data-request-bill="${table.id}" ${calcItemsTotal(table.orderItems)<=0?'disabled':''}>Solicitar conta</button>`;
+  } else if(table.status === 'billing'){
+    actionsHtml = `<button class="btn btn-primary" data-finalize="${table.id}" data-total="${grandTotal}" data-number="${table.number}">Finalizar conta</button>`;
+  }
+
+  return `
+    <div class="table-header">
+      <button class="iconbtn" data-nav="dashboard" aria-label="Voltar">${Icons.back}</button>
+      <div>
+        <h1>Mesa ${Utils.pad2(table.number)}</h1>
+        <span class="status-badge ${badgeClass}">${STATUS_LABEL[table.status]}</span>
+      </div>
+    </div>
+
+    <div class="table-total-banner">
+      <span>Total da mesa</span>
+      <strong>${Utils.formatCurrency(grandTotal)}</strong>
+    </div>
+
+    ${actionsHtml ? `<div class="table-actions">${actionsHtml}</div>` : ''}
+
+    <div class="table-body">
+      <div class="menu-panel">
+        ${renderMenuSearch()}
+        ${renderMenuGrid(table)}
+      </div>
+      <aside class="cart-panel" id="cart-panel">
+        ${renderCartPanel(table)}
+      </aside>
+    </div>
+
+    ${renderMobileSendBar(table)}
+  `;
+}
+
+function renderMenuSearch(){
+  const cats = [{id:'all', label:'Todas'}, ...CATEGORIES];
+  return `
+    <div class="search-input-wrap">
+      ${Icons.search}
+      <input type="text" id="product-search-input" placeholder="Buscar produto no cardápio..." value="${Utils.escapeHtml(State.productSearch)}">
+    </div>
+    <div class="chip-row">
+      ${cats.map(c=>`<button class="chip ${State.productCategory===c.id?'active':''}" data-set-category="${c.id}">${c.label}</button>`).join('')}
+    </div>
+  `;
+}
+
+function renderMenuGrid(table){
+  const term = State.productSearch.trim().toLowerCase();
+  let products = State.products.filter(p =>
+    (State.productCategory==='all' || p.category===State.productCategory) &&
+    (!term || p.name.toLowerCase().includes(term))
+  );
+
+  if(!products.length){
+    return `<div class="empty-note">Nenhum produto encontrado.</div>`;
+  }
+
+  const draftMap = {};
+  (table.draft||[]).forEach(i => draftMap[i.productId] = i.quantity);
+
+  // agrupa por categoria apenas quando não há busca/filtro específico de texto,
+  // para facilitar a navegação visual do garçom
+  if(State.productCategory !== 'all' || term){
+    return `<div class="menu-grid">${products.map(p=>renderProductCard(p, draftMap[p.id]||0)).join('')}</div>`;
+  }
+
+  return CATEGORIES.map(cat => {
+    const items = products.filter(p=>p.category===cat.id);
+    if(!items.length) return '';
+    return `<div class="menu-section-title">${cat.label}</div>
+      <div class="menu-grid">${items.map(p=>renderProductCard(p, draftMap[p.id]||0)).join('')}</div>`;
+  }).join('');
+}
+
+function renderProductCard(product, qty){
+  return `
+    <div class="product-card ${qty>0?'has-qty':''}" data-add-product="${product.id}">
+      ${qty>0 ? `<button class="qty-minus-btn" data-dec-product="${product.id}" data-qty="${qty}" aria-label="Remover uma unidade">${Icons.minus}</button>` : ''}
+      ${qty>0 ? `<span class="qty-badge">${qty}</span>` : ''}
+      <div class="product-icon">${product.icon}</div>
+      <div class="product-name">${Utils.escapeHtml(product.name)}</div>
+      <div class="product-price">${Utils.formatCurrency(product.price)}</div>
+    </div>`;
+}
+
+function renderCartPanel(table){
+  const draft = table.draft || [];
+  const confirmed = table.orderItems || [];
+  const draftTotal = calcItemsTotal(draft);
+  const confirmedTotal = calcItemsTotal(confirmed);
+
+  let html = `<h2>Pedido</h2>`;
+
+  if(!draft.length){
+    html += `<div class="cart-empty">Toque em um produto do cardápio para começar a montar o pedido.</div>`;
+  } else {
+    html += draft.map(item => `
+      <div class="cart-item">
+        <div class="cart-item-info">
+          <div class="cart-item-name">${Utils.escapeHtml(item.name)}</div>
+          <div class="cart-item-sub">${Utils.formatCurrency(item.unitPrice)} un.</div>
+        </div>
+        <div class="qty-stepper">
+          <button class="stepper-btn" data-cart-dec="${item.productId}" data-qty="${item.quantity}">${Icons.minus}</button>
+          <span class="stepper-value">${item.quantity}</span>
+          <button class="stepper-btn" data-cart-inc="${item.productId}">${Icons.plus}</button>
+        </div>
+        <button class="cart-item-remove" data-cart-remove="${item.productId}" aria-label="Remover item">${Icons.trash}</button>
+      </div>
+    `).join('');
+    html += `<div class="cart-subtotal-row"><span>Novo pedido</span><span>${Utils.formatCurrency(draftTotal)}</span></div>
+      <button class="btn btn-primary btn-block" style="margin-top:.8rem;" data-send-order="${table.id}">Enviar pedido</button>`;
+  }
+
+  if(confirmed.length){
+    html += `<div class="confirmed-list">
+      <h3>Já registrado nesta mesa</h3>
+      ${confirmed.map(item => `<div class="confirmed-line"><span>${item.quantity}x ${Utils.escapeHtml(item.name)}</span><span>${Utils.formatCurrency(item.unitPrice*item.quantity)}</span></div>`).join('')}
+      <div class="confirmed-line" style="border-top:1px dashed var(--color-border);padding-top:.4rem;margin-top:.3rem;"><span>Total registrado</span><span>${Utils.formatCurrency(confirmedTotal)}</span></div>
+    </div>`;
+  }
+
+  return html;
+}
+
+function renderMobileSendBar(table){
+  const draft = table.draft || [];
+  if(!draft.length) return '';
+  const total = calcItemsTotal(draft);
+  const count = draft.reduce((s,i)=>s+i.quantity,0);
+  return `
+    <div class="mobile-send-bar">
+      <div class="msb-info">${count} ${count===1?'item novo':'itens novos'}<strong>${Utils.formatCurrency(total)}</strong></div>
+      <button class="btn btn-accent" data-send-order="${table.id}">Enviar pedido</button>
+    </div>`;
+}
+
+/* ---------------------------- ADMINISTRAÇÃO ---------------------------- */
+function renderAdminView(){
+  const tabs = [
+    {id:'mesas', label:'Mesas'},
+    {id:'produtos', label:'Produtos'},
+    {id:'historico', label:'Histórico & Faturamento'}
+  ];
+  let body = '';
+  if(State.adminTab==='mesas') body = renderAdminTables();
+  else if(State.adminTab==='produtos') body = renderAdminProducts();
+  else body = renderAdminHistory();
+
+  return `
+    <div class="table-header">
+      <button class="iconbtn" data-nav="dashboard" aria-label="Voltar">${Icons.back}</button>
+      <div><h1>Administração</h1></div>
+    </div>
+    <div class="admin-tabs">
+      ${tabs.map(t=>`<button class="chip ${State.adminTab===t.id?'active':''}" data-set-admin-tab="${t.id}">${t.label}</button>`).join('')}
+    </div>
+    ${body}
+  `;
+}
+
+function renderAdminTables(){
+  const rows = [...State.tables].sort((a,b)=>a.number-b.number).map(t => {
+    if(State.editingTableId === t.id){
+      return `<div class="admin-list-row">
+        <div class="edit-row">
+          <input type="number" min="1" id="edit-table-number" value="${State.editTableDraft}">
+          <button class="icon-small-btn" data-save-table="${t.id}" aria-label="Salvar">${Icons.check}</button>
+          <button class="icon-small-btn" data-cancel-edit-table aria-label="Cancelar">${Icons.close}</button>
+        </div>
+      </div>`;
+    }
+    return `<div class="admin-list-row">
+      <div class="admin-row-main">
+        <strong>Mesa ${Utils.pad2(t.number)}</strong>
+        <small>${STATUS_LABEL[t.status]} · ${Utils.formatCurrency(getTableGrandTotal(t))}</small>
+      </div>
+      <div class="admin-row-actions">
+        <button class="icon-small-btn" data-edit-table="${t.id}" aria-label="Editar número">${Icons.edit}</button>
+        <button class="icon-small-btn danger" data-remove-table="${t.id}" ${t.status!=='free'?'disabled':''} aria-label="Remover mesa" title="${t.status!=='free' ? 'Só é possível remover mesas livres' : 'Remover mesa'}">${Icons.trash}</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  return `
+    <div class="admin-panel">
+      <h2>Adicionar mesa</h2>
+      <form class="form-row" id="form-add-table">
+        <input type="number" min="1" name="number" id="add-table-number" placeholder="Número da mesa" value="${State.addTableDraft}" required>
+        <button class="btn btn-primary" type="submit">Adicionar mesa</button>
+      </form>
+    </div>
+    <div class="admin-panel">
+      <h2>Mesas cadastradas (${State.tables.length})</h2>
+      ${rows || '<div class="empty-note">Nenhuma mesa cadastrada.</div>'}
+    </div>
+  `;
+}
+
+function renderAdminProducts(){
+  const groups = CATEGORIES.map(cat => {
+    const items = State.products.filter(p=>p.category===cat.id);
+    if(!items.length) return '';
+    const rows = items.map(p => {
+      if(State.editingProductId === p.id){
+        return `<div class="admin-list-row">
+          <div class="edit-row">
+            <input type="text" id="edit-prod-icon" value="${Utils.escapeHtml(State.editProductDraft.icon)}" placeholder="Ícone" style="flex:0 0 60px;text-align:center;">
+            <input type="text" id="edit-prod-name" value="${Utils.escapeHtml(State.editProductDraft.name)}" placeholder="Nome">
+            <select id="edit-prod-category">${CATEGORIES.map(c=>`<option value="${c.id}" ${c.id===State.editProductDraft.category?'selected':''}>${c.label}</option>`).join('')}</select>
+            <input type="number" step="0.01" min="0" id="edit-prod-price" value="${State.editProductDraft.price}" placeholder="Preço">
+            <button class="icon-small-btn" data-save-product="${p.id}" aria-label="Salvar">${Icons.check}</button>
+            <button class="icon-small-btn" data-cancel-edit-product aria-label="Cancelar">${Icons.close}</button>
+          </div>
+        </div>`;
+      }
+      return `<div class="admin-list-row">
+        <div class="admin-row-main">
+          <strong>${p.icon} ${Utils.escapeHtml(p.name)}</strong>
+          <small>${Utils.formatCurrency(p.price)}</small>
+        </div>
+        <div class="admin-row-actions">
+          <button class="icon-small-btn" data-edit-product="${p.id}" aria-label="Editar produto">${Icons.edit}</button>
+          <button class="icon-small-btn danger" data-remove-product="${p.id}" aria-label="Remover produto">${Icons.trash}</button>
+        </div>
+      </div>`;
+    }).join('');
+    return `<div class="category-group-title">${cat.label}</div>${rows}`;
+  }).join('');
+
+  return `
+    <div class="admin-panel">
+      <h2>Adicionar produto</h2>
+      <form class="form-row" id="form-add-product">
+        <input type="text" name="icon" id="add-prod-icon" placeholder="Ícone (emoji)" style="flex:0 0 110px;" maxlength="4" value="${Utils.escapeHtml(State.addProductDraft.icon)}">
+        <input type="text" name="name" id="add-prod-name" placeholder="Nome do produto" required style="flex:1 1 180px;" value="${Utils.escapeHtml(State.addProductDraft.name)}">
+        <select name="category" id="add-prod-category">${CATEGORIES.map(c=>`<option value="${c.id}" ${c.id===State.addProductDraft.category?'selected':''}>${c.label}</option>`).join('')}</select>
+        <input type="number" step="0.01" min="0" name="price" id="add-prod-price" placeholder="Preço (R$)" required style="flex:0 0 130px;" value="${Utils.escapeHtml(State.addProductDraft.price)}">
+        <button class="btn btn-primary" type="submit">Adicionar produto</button>
+      </form>
+    </div>
+    <div class="admin-panel">
+      <h2>Cardápio (${State.products.length} produtos)</h2>
+      ${groups || '<div class="empty-note">Nenhum produto cadastrado.</div>'}
+    </div>
+  `;
+}
+
+function renderAdminHistory(){
+  const stats = getDashboardStats();
+  const totalAllTime = State.history.reduce((s,h)=>s+h.total,0);
+  const ordersAllTime = State.history.length;
+  const avgAllTime = ordersAllTime ? totalAllTime/ordersAllTime : 0;
+
+  const entries = State.history.map(h => `
+    <div class="history-card">
+      <div class="history-card-top">
+        <strong>Mesa ${Utils.pad2(h.tableNumber)}</strong>
+        <span>${Utils.formatCurrency(h.total)}</span>
+      </div>
+      <time>${Utils.formatDateTime(h.closedAt)}</time>
+      <div class="history-items">${h.items.map(i=>`${i.quantity}x ${Utils.escapeHtml(i.name)}`).join(' · ')}</div>
+    </div>
+  `).join('');
+
+  return `
+    <div class="stats-grid">
+      ${statCard(Utils.formatCurrency(stats.revenueToday), 'Faturamento hoje', true)}
+      ${statCard(stats.ordersToday, 'Atendimentos hoje')}
+      ${statCard(Utils.formatCurrency(stats.avgTicket), 'Ticket médio hoje')}
+      ${statCard(Utils.formatCurrency(totalAllTime), 'Faturamento total')}
+      ${statCard(ordersAllTime, 'Atendimentos no total')}
+      ${statCard(Utils.formatCurrency(avgAllTime), 'Ticket médio geral')}
+    </div>
+    <div class="admin-panel">
+      <h2>Histórico de atendimentos</h2>
+      ${entries || '<div class="empty-note">Nenhum atendimento finalizado ainda.</div>'}
+    </div>
+  `;
+}
+
+/* ============================== 8. EVENTOS ================================ */
+function setupEvents(){
+  const app = document.getElementById('app');
+
+  app.addEventListener('click', async (e) => {
+    // navegação
+    const navBtn = e.target.closest('[data-nav]');
+    if(navBtn){
+      const dest = navBtn.getAttribute('data-nav');
+      if(dest==='dashboard') return Actions.goToDashboard();
+      if(dest==='admin') return Actions.openAdmin();
+    }
+
+    // filtros do dashboard
+    const filterBtn = e.target.closest('[data-set-table-filter]');
+    if(filterBtn){ State.tableStatusFilter = filterBtn.getAttribute('data-set-table-filter'); return render(); }
+
+    // filtro de categoria (tela da mesa)
+    const catBtn = e.target.closest('[data-set-category]');
+    if(catBtn){ State.productCategory = catBtn.getAttribute('data-set-category'); return render(); }
+
+    // abrir mesa
+    const openTableBtn = e.target.closest('[data-open-table]');
+    if(openTableBtn){ return Actions.openTable(openTableBtn.getAttribute('data-open-table')); }
+
+    // clique no produto (adiciona 1 unidade ao pedido em construção)
+    const minusOnProduct = e.target.closest('[data-dec-product]');
+    if(minusOnProduct){
+      e.stopPropagation();
+      const productId = minusOnProduct.getAttribute('data-dec-product');
+      const qty = Number(minusOnProduct.getAttribute('data-qty'));
+      await Actions.decFromCart(State.currentTableId, productId, qty);
+      return;
+    }
+    const productCard = e.target.closest('[data-add-product]');
+    if(productCard){
+      const productId = productCard.getAttribute('data-add-product');
+      await Actions.addToCart(State.currentTableId, productId);
+      return;
+    }
+
+    // carrinho: incrementar/decrementar/remover
+    const cartInc = e.target.closest('[data-cart-inc]');
+    if(cartInc){ await Actions.addToCart(State.currentTableId, cartInc.getAttribute('data-cart-inc')); return; }
+    const cartDec = e.target.closest('[data-cart-dec]');
+    if(cartDec){
+      const qty = Number(cartDec.getAttribute('data-qty'));
+      await Actions.decFromCart(State.currentTableId, cartDec.getAttribute('data-cart-dec'), qty);
+      return;
+    }
+    const cartRemove = e.target.closest('[data-cart-remove]');
+    if(cartRemove){ await Actions.removeFromCart(State.currentTableId, cartRemove.getAttribute('data-cart-remove')); return; }
+
+    // enviar pedido / conta
+    const sendBtn = e.target.closest('[data-send-order]');
+    if(sendBtn){ await Actions.sendOrder(sendBtn.getAttribute('data-send-order')); return; }
+    const billBtn = e.target.closest('[data-request-bill]');
+    if(billBtn){ await Actions.requestBill(billBtn.getAttribute('data-request-bill')); return; }
+    const finalizeBtn = e.target.closest('[data-finalize]');
+    if(finalizeBtn){
+      await Actions.finalizeTable(
+        finalizeBtn.getAttribute('data-finalize'),
+        Number(finalizeBtn.getAttribute('data-total')),
+        Number(finalizeBtn.getAttribute('data-number'))
+      );
+      return;
+    }
+
+    // administração — abas
+    const adminTabBtn = e.target.closest('[data-set-admin-tab]');
+    if(adminTabBtn){ State.adminTab = adminTabBtn.getAttribute('data-set-admin-tab'); State.editingTableId=null; State.editingProductId=null; State.editTableDraft=''; State.editProductDraft={icon:'',name:'',category:'espetinhos',price:''}; return render(); }
+
+    // administração — mesas
+    const editTableBtn = e.target.closest('[data-edit-table]');
+    if(editTableBtn){
+      const id = editTableBtn.getAttribute('data-edit-table');
+      const t = State.tables.find(t=>t.id===id);
+      State.editingTableId = id;
+      State.editTableDraft = t ? String(t.number) : '';
+      return render();
+    }
+    if(e.target.closest('[data-cancel-edit-table]')){ State.editingTableId=null; State.editTableDraft=''; return render(); }
+    const saveTableBtn = e.target.closest('[data-save-table]');
+    if(saveTableBtn){
+      const id = saveTableBtn.getAttribute('data-save-table');
+      const num = Number(State.editTableDraft);
+      if(num > 0){ await Database.updateTable(id, {number:num}); }
+      State.editingTableId=null; State.editTableDraft=''; return;
+    }
+    const removeTableBtn = e.target.closest('[data-remove-table]');
+    if(removeTableBtn && !removeTableBtn.disabled){
+      const id = removeTableBtn.getAttribute('data-remove-table');
+      if(confirm('Remover esta mesa? Esta ação não pode ser desfeita.')){
+        try{ await Database.removeTable(id); showToast('Mesa removida'); }
+        catch(err){ alert(err.message); }
+      }
+      return;
+    }
+
+    // administração — produtos
+    const editProductBtn = e.target.closest('[data-edit-product]');
+    if(editProductBtn){
+      const id = editProductBtn.getAttribute('data-edit-product');
+      const p = State.products.find(p=>p.id===id);
+      State.editingProductId = id;
+      State.editProductDraft = p ? {icon:p.icon, name:p.name, category:p.category, price:String(p.price)} : {icon:'', name:'', category:'espetinhos', price:''};
+      return render();
+    }
+    if(e.target.closest('[data-cancel-edit-product]')){ State.editingProductId=null; return render(); }
+    const saveProductBtn = e.target.closest('[data-save-product]');
+    if(saveProductBtn){
+      const id = saveProductBtn.getAttribute('data-save-product');
+      const name = State.editProductDraft.name.trim();
+      const category = State.editProductDraft.category;
+      const price = Number(State.editProductDraft.price);
+      const icon = State.editProductDraft.icon.trim();
+      if(name && price >= 0){
+        await Database.updateProduct(id, {name, category, price, icon: icon || DEFAULT_ICON_BY_CATEGORY[category]});
+      }
+      State.editingProductId=null; return;
+    }
+    const removeProductBtn = e.target.closest('[data-remove-product]');
+    if(removeProductBtn){
+      const id = removeProductBtn.getAttribute('data-remove-product');
+      if(confirm('Remover este produto do cardápio?')){
+        await Database.removeProduct(id);
+        showToast('Produto removido');
+      }
+      return;
+    }
+  });
+
+  // campos de busca/formulários (input) — o valor digitado é guardado no
+  // State antes de cada render, para não ser perdido se um re-render for
+  // disparado por uma mudança vinda de outro aparelho enquanto o usuário
+  // ainda está digitando.
+  app.addEventListener('input', (e) => {
+    const id = e.target.id;
+    if(id === 'product-search-input'){ State.productSearch = e.target.value; return render(); }
+    if(id === 'add-table-number'){ State.addTableDraft = e.target.value; return; }
+    if(id === 'edit-table-number'){ State.editTableDraft = e.target.value; return; }
+    if(id === 'add-prod-icon'){ State.addProductDraft.icon = e.target.value; return; }
+    if(id === 'add-prod-name'){ State.addProductDraft.name = e.target.value; return; }
+    if(id === 'add-prod-category'){ State.addProductDraft.category = e.target.value; return; }
+    if(id === 'add-prod-price'){ State.addProductDraft.price = e.target.value; return; }
+    if(id === 'edit-prod-icon'){ State.editProductDraft.icon = e.target.value; return; }
+    if(id === 'edit-prod-name'){ State.editProductDraft.name = e.target.value; return; }
+    if(id === 'edit-prod-category'){ State.editProductDraft.category = e.target.value; return; }
+    if(id === 'edit-prod-price'){ State.editProductDraft.price = e.target.value; return; }
+  });
+
+  // formulários de administração
+  app.addEventListener('submit', async (e) => {
+    if(e.target.id === 'form-add-table'){
+      e.preventDefault();
+      const num = Number(new FormData(e.target).get('number'));
+      if(num > 0){
+        await Database.addTable(num);
+        State.addTableDraft = '';
+        showToast('Mesa adicionada');
+        return render();
+      }
+      return;
+    }
+    if(e.target.id === 'form-add-product'){
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const name = String(fd.get('name')||'').trim();
+      const category = String(fd.get('category')||'outros');
+      const price = Number(fd.get('price'));
+      const icon = String(fd.get('icon')||'').trim();
+      if(name && price >= 0){
+        await Database.addProduct({name, category, price, icon});
+        State.addProductDraft = {icon:'', name:'', category:'espetinhos', price:''};
+        showToast('Produto adicionado');
+        return render();
+      }
+      return;
+    }
+  });
+}
+
+/* ============================ 9. INICIALIZAÇÃO ============================ */
+async function init(){
+  await refreshCache();
+  // Sempre que o Database notificar uma mudança (local ou de outra aba —
+  // simulando múltiplos garçons/caixa em tempo real), atualiza o cache e
+  // re-renderiza a tela atual automaticamente.
+  Database.subscribe(async () => {
+    await refreshCache();
+    render();
+  });
+  setupEvents();
+  render();
+}
+
+init();
+</script>
+</body>
+</html>
