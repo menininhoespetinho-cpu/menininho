@@ -60,25 +60,26 @@
   .topbar{
     position:sticky;top:0;z-index:40;
     display:flex;align-items:center;justify-content:space-between;gap:.75rem;
-    padding:.7rem 1rem;background:var(--color-surface);
+    padding:.7rem .9rem;background:var(--color-surface);
     border-bottom:1px solid var(--color-border);
   }
-  .brand{display:flex;align-items:center;gap:.6rem;min-width:0;}
+  .brand{display:flex;align-items:center;gap:.55rem;min-width:0;}
   .brand-mark{
-    font-size:1.5rem;width:2.4rem;height:2.4rem;border-radius:999px;
+    font-size:1.45rem;width:2.3rem;height:2.3rem;border-radius:999px;
     background:var(--color-primary-light);display:flex;align-items:center;justify-content:center;flex:0 0 auto;
   }
   .brand-text{min-width:0;}
-  .brand-text strong{display:block;font-size:1rem;line-height:1.1;}
-  .brand-text small{display:block;color:var(--color-text-muted);font-size:.7rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .topnav{display:flex;gap:.4rem;flex:0 0 auto;}
+  .brand-text strong{display:block;font-size:.98rem;line-height:1.1;}
+  .brand-text small{display:block;color:var(--color-text-muted);font-size:.68rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .topnav{display:flex;gap:.35rem;flex:0 0 auto;}
   .navbtn{
-    border:1.5px solid var(--color-border);background:transparent;padding:.5rem .85rem;
-    border-radius:999px;font-weight:700;font-size:.8rem;cursor:pointer;color:var(--color-text-muted);
+    border:1.5px solid var(--color-border);background:transparent;padding:.5rem .75rem;
+    border-radius:999px;font-weight:800;font-size:.76rem;cursor:pointer;color:var(--color-text-muted);
+    min-height:2.2rem;
   }
   .navbtn.active{background:var(--color-primary);border-color:var(--color-primary);color:#fff;}
 
-  main.view{flex:1;width:100%;max-width:1180px;margin:0 auto;padding:1rem;padding-bottom:6.5rem;}
+  main.view{flex:1;width:100%;max-width:1180px;margin:0 auto;padding:.8rem .8rem 6.2rem;}
 
   /* ---------- toast ---------- */
   #toast{
@@ -120,14 +121,14 @@
   @media(min-width:1140px){.tables-grid{grid-template-columns:repeat(5,1fr);}}
 
   .table-card{
-    text-align:left;cursor:pointer;border-radius:var(--radius-lg);padding:1rem;
+    text-align:left;cursor:pointer;border-radius:var(--radius-lg);padding:.9rem .8rem;
     background:var(--color-surface);border:1.5px solid var(--color-border);box-shadow:var(--shadow-sm);
-    display:flex;flex-direction:column;gap:.55rem;min-height:118px;position:relative;
+    display:flex;flex-direction:column;gap:.45rem;min-height:116px;position:relative;
     transition:transform .1s ease;
   }
-  .table-card:active{transform:scale(.96);}
+  .table-card:active{transform:scale(.98);}
   .table-card-top{display:flex;align-items:center;justify-content:space-between;}
-  .table-number{font-weight:800;font-size:1.05rem;}
+  .table-number{font-weight:800;font-size:1rem;}
   .status-dot{width:.6rem;height:.6rem;border-radius:50%;background:var(--color-free);flex:0 0 auto;}
   .table-card.status-occupied{border-color:var(--color-primary);background:var(--color-primary-light);}
   .table-card.status-occupied .status-dot{background:var(--color-occupied);}
@@ -193,7 +194,12 @@
   }
   .product-card:active{transform:scale(.96);}
   .product-card.has-qty{border-color:var(--color-primary);background:var(--color-primary-light);}
-  .product-icon{font-size:1.85rem;line-height:1;}
+  .product-icon{font-size:1.85rem;line-height:1;display:flex;align-items:center;justify-content:center;}
+  .product-image-tile{
+    width:3.1rem;height:3.1rem;border-radius:.8rem;object-fit:cover;display:block;
+    background:#f4efe8;border:1.5px solid var(--color-border);box-shadow:inset 0 0 0 1px rgba(0,0,0,.02);
+  }
+  .product-emoji{font-size:1.85rem;line-height:1;display:block;}
   .product-name{font-size:.8rem;font-weight:700;line-height:1.2;min-height:2.1em;display:flex;align-items:center;}
   .product-price{font-size:.78rem;color:var(--color-text-muted);font-weight:700;}
   .qty-badge{
@@ -225,12 +231,12 @@
   .confirmed-line span:last-child{font-weight:800;}
 
   .mobile-send-bar{
-    position:fixed;left:0;right:0;bottom:0;background:var(--color-text);color:#fff;padding:.75rem .9rem;
+    position:fixed;left:0;right:0;bottom:0;background:var(--color-text);color:#fff;padding:.8rem .9rem calc(.8rem + env(safe-area-inset-bottom, 0px));
     display:flex;align-items:center;justify-content:space-between;gap:.8rem;z-index:60;box-shadow:0 -4px 16px rgba(0,0,0,.18);
   }
   .mobile-send-bar .msb-info{font-size:.78rem;opacity:.85;font-weight:700;}
   .mobile-send-bar strong{display:block;font-size:1.05rem;}
-  .mobile-send-bar .btn{white-space:nowrap;}
+  .mobile-send-bar .btn{white-space:nowrap;min-height:2.8rem;}
   @media(min-width:960px){.mobile-send-bar{display:none;}}
 
   /* ---------- admin ---------- */
@@ -239,9 +245,29 @@
   .admin-panel h2{font-size:1rem;margin:0 0 .8rem;}
   .form-row{display:flex;flex-wrap:wrap;gap:.55rem;margin-bottom:1rem;}
   .form-row input,.form-row select{
-    flex:1 1 130px;padding:.62rem .8rem;border-radius:.65rem;border:1.5px solid var(--color-border);font-size:.87rem;background:var(--color-bg);
+    flex:1 1 130px;padding:.7rem .8rem;border-radius:.75rem;border:1.5px solid var(--color-border);font-size:.87rem;background:var(--color-bg);min-height:2.9rem;
   }
-  .form-row .btn{flex:0 0 auto;}
+  .form-row .btn{flex:0 0 auto;min-height:2.9rem;}
+  .floating-add-btn{
+    position:fixed;right:1rem;bottom:calc(1rem + env(safe-area-inset-bottom, 0px));z-index:80;
+    width:3.5rem;height:3.5rem;border-radius:50%;border:none;
+    background:var(--color-primary);color:#fff;box-shadow:var(--shadow-md);
+    font-size:2rem;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  }
+  .quick-add-table{
+    background:var(--color-surface);border:1.5px solid var(--color-border);border-radius:var(--radius-lg);
+    padding:1rem;margin-bottom:1rem;box-shadow:var(--shadow-sm);
+  }
+  .quick-add-table-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem;}
+  .quick-add-table-header h3{margin:0;font-size:1rem;}
+  .lock-panel{
+    background:var(--color-surface);border:1.5px solid var(--color-border);border-radius:var(--radius-lg);
+    padding:1.25rem;box-shadow:var(--shadow-sm);text-align:center;
+  }
+  .lock-panel .emoji{font-size:2rem;display:block;margin-bottom:.4rem;}
+  .lock-panel h3{margin:0 0 .5rem;}
+  .lock-panel p{margin:0 0 .9rem;color:var(--color-text-muted);font-size:.85rem;line-height:1.5;}
+  .lock-panel .form-row{margin-bottom:0;}
   .admin-list-row{display:flex;align-items:center;gap:.7rem;padding:.65rem 0;border-bottom:1px solid var(--color-border);flex-wrap:wrap;}
   .admin-list-row:last-child{border-bottom:none;}
   .admin-row-main{flex:1;min-width:160px;}
@@ -340,6 +366,7 @@ const CATEGORIES = [
 const DEFAULT_ICON_BY_CATEGORY = {
   espetinhos:'🍢', porcoes:'🍟', bebidas:'🍺', refrigerantes:'🥤', sucos:'🧃', outros:'🍽️'
 };
+const PRODUCTS_PASSWORD = '1234';
 
 function categoryLabel(id){
   const c = CATEGORIES.find(c=>c.id===id);
@@ -393,10 +420,52 @@ const FIREBASE_CONFIG = {
 firebase.initializeApp(FIREBASE_CONFIG);
 const firestore = firebase.firestore();
 
+const STORAGE_KEYS = {
+  tables: 'menininho_tables',
+  products: 'menininho_products',
+  history: 'menininho_history'
+};
+
+function readLocalList(key, fallback){
+  try{
+    const raw = localStorage.getItem(key);
+    if(!raw) return fallback;
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : fallback;
+  }catch(err){
+    console.warn('LocalStorage leitura falhou:', key, err);
+    return fallback;
+  }
+}
+
+function writeLocalList(key, value){
+  try{ localStorage.setItem(key, JSON.stringify(value)); }
+  catch(err){ console.warn('LocalStorage gravação falhou:', key, err); }
+}
+
+function firebaseWithTimeout(operation, timeoutMs = 1500){
+  return Promise.race([
+    operation(),
+    new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout de conexão com o Firebase')), timeoutMs))
+  ]);
+}
+
 const Database = (function(){
   const listeners = [];
   const cache = {tables:[], products:[], history:[]};
   const ready = {tables:false, products:false, history:false};
+  let fallbackMode = false;
+
+  function setFallbackMode(value){
+    fallbackMode = value;
+    if(value){
+      cache.tables = readLocalList(STORAGE_KEYS.tables, []);
+      cache.products = readLocalList(STORAGE_KEYS.products, []);
+      cache.history = readLocalList(STORAGE_KEYS.history, []);
+      ready.tables = true; ready.products = true; ready.history = true;
+      notify();
+    }
+  }
 
   function isReady(){ return ready.tables && ready.products && ready.history; }
 
@@ -427,8 +496,97 @@ const Database = (function(){
   function onSnapshotError(label){
     return (err) => {
       console.error('Erro ao ouvir "'+label+'":', err);
-      showToast('Erro de conexão com o Firebase (' + label + ')');
+      setFallbackMode(true);
+      showToast('Fallback local ativado (' + label + ')');
     };
+  }
+
+  function ensureLocalSeed(){
+    if(!readLocalList(STORAGE_KEYS.products, []).length){
+      writeLocalList(STORAGE_KEYS.products, buildSeedProducts().map((p, idx) => ({id: String(idx + 1), ...p})));
+    }
+    if(!readLocalList(STORAGE_KEYS.tables, []).length){
+      const seedTables = Array.from({length:12}, (_, i) => ({
+        id: String(i + 1),
+        number: i + 1,
+        status: 'free',
+        openedAt: null,
+        orderItems: [],
+        draft: []
+      }));
+      writeLocalList(STORAGE_KEYS.tables, seedTables);
+    }
+    if(!readLocalList(STORAGE_KEYS.history, []).length){
+      writeLocalList(STORAGE_KEYS.history, []);
+    }
+  }
+
+  async function localAddTable(number){
+    const tables = readLocalList(STORAGE_KEYS.tables, []);
+    const nextId = String(Date.now()) + '-' + Math.random().toString(16).slice(2, 8);
+    tables.push({id: nextId, number, status:'free', openedAt:null, orderItems:[], draft:[]});
+    writeLocalList(STORAGE_KEYS.tables, tables.sort((a,b)=>a.number-b.number));
+    cache.tables = tables.slice();
+    ready.tables = true;
+    notify();
+  }
+
+  async function localRemoveTable(tableId){
+    const tables = readLocalList(STORAGE_KEYS.tables, []).filter(t => t.id !== tableId);
+    writeLocalList(STORAGE_KEYS.tables, tables);
+    cache.tables = tables.slice();
+    ready.tables = true;
+    notify();
+  }
+
+  async function localUpdateTable(tableId, patch){
+    const tables = readLocalList(STORAGE_KEYS.tables, []).map(t => t.id === tableId ? {...t, ...patch} : t);
+    writeLocalList(STORAGE_KEYS.tables, tables);
+    cache.tables = tables.slice();
+    ready.tables = true;
+    notify();
+  }
+
+  async function localAddProduct(payload){
+    const products = readLocalList(STORAGE_KEYS.products, []);
+    const item = {
+      id: String(Date.now()) + '-' + Math.random().toString(16).slice(2, 8),
+      name: payload.name,
+      category: payload.category,
+      price: Number(payload.price) || 0,
+      icon: payload.icon || DEFAULT_ICON_BY_CATEGORY[payload.category] || '🍽️'
+    };
+    products.push(item);
+    writeLocalList(STORAGE_KEYS.products, products);
+    cache.products = products.slice();
+    ready.products = true;
+    notify();
+  }
+
+  async function localUpdateProduct(productId, patch){
+    const products = readLocalList(STORAGE_KEYS.products, []).map(p => p.id === productId ? {...p, ...patch} : p);
+    writeLocalList(STORAGE_KEYS.products, products);
+    cache.products = products.slice();
+    ready.products = true;
+    notify();
+  }
+
+  async function localRemoveProduct(productId){
+    const products = readLocalList(STORAGE_KEYS.products, []).filter(p => p.id !== productId);
+    writeLocalList(STORAGE_KEYS.products, products);
+    cache.products = products.slice();
+    ready.products = true;
+    notify();
+  }
+
+  function localSyncAll(){
+    const tables = readLocalList(STORAGE_KEYS.tables, []);
+    const products = readLocalList(STORAGE_KEYS.products, []);
+    const history = readLocalList(STORAGE_KEYS.history, []);
+    cache.tables = tables;
+    cache.products = products;
+    cache.history = history;
+    ready.tables = true; ready.products = true; ready.history = true;
   }
 
   tablesRef.onSnapshot(snap => {
@@ -453,19 +611,32 @@ const Database = (function(){
   // Semeia o cardápio e as 12 mesas na primeira vez que o banco é usado
   // (coleções vazias). Não roda de novo depois disso.
   async function ensureSeed(){
-    const [pSnap, tSnap] = await Promise.all([productsRef.limit(1).get(), tablesRef.limit(1).get()]);
-    if(pSnap.empty){
-      const batch = firestore.batch();
-      buildSeedProducts().forEach(p => batch.set(productsRef.doc(), p));
-      await batch.commit();
-    }
-    if(tSnap.empty){
-      const batch = firestore.batch();
-      for(let n=1; n<=12; n++){ batch.set(tablesRef.doc(), {number:n, status:'free', openedAt:null, orderItems:[], draft:[]}); }
-      await batch.commit();
+    try{
+      const [pSnap, tSnap] = await Promise.all([
+        firebaseWithTimeout(() => productsRef.limit(1).get()),
+        firebaseWithTimeout(() => tablesRef.limit(1).get())
+      ]);
+      if(pSnap.empty){
+        const batch = firestore.batch();
+        buildSeedProducts().forEach(p => batch.set(productsRef.doc(), p));
+        await firebaseWithTimeout(() => batch.commit());
+      }
+      if(tSnap.empty){
+        const batch = firestore.batch();
+        for(let n=1; n<=12; n++){ batch.set(tablesRef.doc(), {number:n, status:'free', openedAt:null, orderItems:[], draft:[]}); }
+        await firebaseWithTimeout(() => batch.commit());
+      }
+    }catch(err){
+      console.error('Falha ao semear dados iniciais', err);
+      setFallbackMode(true);
+      ensureLocalSeed();
+      showToast('Fallback local ativado');
     }
   }
-  ensureSeed().catch(err => { console.error('Falha ao semear dados iniciais', err); showToast('Não foi possível preparar os dados iniciais no Firebase'); });
+  ensureSeed();
+
+  ensureLocalSeed();
+  localSyncAll();
 
   return {
     // ---- assinatura de mudanças em tempo real (onSnapshot) ----
@@ -490,6 +661,13 @@ const Database = (function(){
       const existing = draft.find(i=>i.productId===productId);
       if(existing) existing.quantity += 1;
       else draft.push({productId, name:product.name, unitPrice:product.price, quantity:1});
+      if(fallbackMode){
+        const tables = readLocalList(STORAGE_KEYS.tables, []).map(table => table.id === tableId ? {...table, draft} : table);
+        writeLocalList(STORAGE_KEYS.tables, tables);
+        cache.tables = tables.slice();
+        notify();
+        return;
+      }
       await tablesRef.doc(tableId).update({draft});
     },
     async setDraftQty(tableId, productId, qty){
@@ -498,11 +676,25 @@ const Database = (function(){
       let draft = t.draft.map(i=>({...i}));
       if(qty === 0) draft = draft.filter(i=>i.productId!==productId);
       else { const existing = draft.find(i=>i.productId===productId); if(existing) existing.quantity = qty; }
+      if(fallbackMode){
+        const tables = readLocalList(STORAGE_KEYS.tables, []).map(table => table.id === tableId ? {...table, draft} : table);
+        writeLocalList(STORAGE_KEYS.tables, tables);
+        cache.tables = tables.slice();
+        notify();
+        return;
+      }
       await tablesRef.doc(tableId).update({draft});
     },
     async removeDraftItem(tableId, productId){
       const t = findTable(tableId);
       const draft = t.draft.filter(i=>i.productId!==productId);
+      if(fallbackMode){
+        const tables = readLocalList(STORAGE_KEYS.tables, []).map(table => table.id === tableId ? {...table, draft} : table);
+        writeLocalList(STORAGE_KEYS.tables, tables);
+        cache.tables = tables.slice();
+        notify();
+        return;
+      }
       await tablesRef.doc(tableId).update({draft});
     },
     async sendOrder(tableId){
@@ -516,14 +708,41 @@ const Database = (function(){
       });
       const patch = {orderItems, draft:[]};
       if(t.status === 'free'){ patch.status = 'occupied'; patch.openedAt = new Date().toISOString(); }
+      if(fallbackMode){
+        const tables = readLocalList(STORAGE_KEYS.tables, []).map(table => table.id === tableId ? {...table, ...patch} : table);
+        writeLocalList(STORAGE_KEYS.tables, tables);
+        cache.tables = tables.slice();
+        notify();
+        return;
+      }
       await tablesRef.doc(tableId).update(patch);
     },
     async requestBill(tableId){
+      if(fallbackMode){
+        const tables = readLocalList(STORAGE_KEYS.tables, []).map(table => table.id === tableId ? {...table, status:'billing'} : table);
+        writeLocalList(STORAGE_KEYS.tables, tables);
+        cache.tables = tables.slice();
+        notify();
+        return;
+      }
       await tablesRef.doc(tableId).update({status:'billing'});
     },
     async closeTable(tableId){
       const t = findTable(tableId);
       const total = itemsTotal(t.orderItems);
+      if(fallbackMode){
+        const history = readLocalList(STORAGE_KEYS.history, []);
+        const tables = readLocalList(STORAGE_KEYS.tables, []).map(table => table.id === tableId ? { ...table, status:'free', openedAt:null, orderItems:[], draft:[] } : table);
+        if(total > 0){
+          history.unshift({id: String(Date.now()), tableNumber: t.number, closedAt: new Date().toISOString(), total, items: t.orderItems});
+          writeLocalList(STORAGE_KEYS.history, history);
+          cache.history = history.slice();
+        }
+        writeLocalList(STORAGE_KEYS.tables, tables);
+        cache.tables = tables.slice();
+        ready.tables = true; ready.history = true; notify();
+        return;
+      }
       if(total > 0){
         await historyRef.add({tableNumber:t.number, closedAt:new Date().toISOString(), total, items:t.orderItems});
       }
@@ -532,29 +751,85 @@ const Database = (function(){
 
     // ---- administração: mesas ----
     async addTable(number){
-      await tablesRef.add({number, status:'free', openedAt:null, orderItems:[], draft:[]});
+      if(fallbackMode){
+        await localAddTable(number);
+        return;
+      }
+      try{
+        await firebaseWithTimeout(() => tablesRef.add({number, status:'free', openedAt:null, orderItems:[], draft:[]}));
+      }catch(err){
+        console.warn('Firestore addTable falhou; usando localStorage.', err);
+        setFallbackMode(true);
+        await localAddTable(number);
+      }
     },
     async updateTable(tableId, patch){
-      await tablesRef.doc(tableId).update(patch);
+      if(fallbackMode){
+        await localUpdateTable(tableId, patch);
+        return;
+      }
+      try{ await firebaseWithTimeout(() => tablesRef.doc(tableId).update(patch)); }
+      catch(err){
+        console.warn('Firestore updateTable falhou; usando localStorage.', err);
+        setFallbackMode(true);
+        await localUpdateTable(tableId, patch);
+      }
     },
     async removeTable(tableId){
       const t = findTable(tableId);
       if(t.status !== 'free') throw new Error('Só é possível remover mesas livres.');
-      await tablesRef.doc(tableId).delete();
+      if(fallbackMode){
+        await localRemoveTable(tableId);
+        return;
+      }
+      try{ await firebaseWithTimeout(() => tablesRef.doc(tableId).delete()); }
+      catch(err){
+        console.warn('Firestore removeTable falhou; usando localStorage.', err);
+        setFallbackMode(true);
+        await localRemoveTable(tableId);
+      }
     },
 
     // ---- administração: produtos ----
     async addProduct(payload){
-      await productsRef.add({
-        name:payload.name, category:payload.category,
-        price:Number(payload.price)||0, icon: payload.icon || DEFAULT_ICON_BY_CATEGORY[payload.category] || '🍽️'
-      });
+      if(fallbackMode){
+        await localAddProduct(payload);
+        return;
+      }
+      try{
+        await firebaseWithTimeout(() => productsRef.add({
+          name:payload.name, category:payload.category,
+          price:Number(payload.price)||0, icon: payload.icon || DEFAULT_ICON_BY_CATEGORY[payload.category] || '🍽️'
+        }));
+      }catch(err){
+        console.warn('Firestore addProduct falhou; usando localStorage.', err);
+        setFallbackMode(true);
+        await localAddProduct(payload);
+      }
     },
     async updateProduct(productId, patch){
-      await productsRef.doc(productId).update(patch);
+      if(fallbackMode){
+        await localUpdateProduct(productId, patch);
+        return;
+      }
+      try{ await firebaseWithTimeout(() => productsRef.doc(productId).update(patch)); }
+      catch(err){
+        console.warn('Firestore updateProduct falhou; usando localStorage.', err);
+        setFallbackMode(true);
+        await localUpdateProduct(productId, patch);
+      }
     },
     async removeProduct(productId){
-      await productsRef.doc(productId).delete();
+      if(fallbackMode){
+        await localRemoveProduct(productId);
+        return;
+      }
+      try{ await firebaseWithTimeout(() => productsRef.doc(productId).delete()); }
+      catch(err){
+        console.warn('Firestore removeProduct falhou; usando localStorage.', err);
+        setFallbackMode(true);
+        await localRemoveProduct(productId);
+      }
     },
 
     // ---- utilidades internas ----
@@ -570,15 +845,15 @@ const State = {
   productSearch:'',
   productCategory:'all',
   adminTab:'mesas',            // mesas | produtos | historico
-  editingTableId:null,
   editingProductId:null,
+  showAddTableForm:false,
+  productAccessUnlocked:false,
+  productPasswordInput:'',
 
   // valores "em digitação" nos formulários de administração — guardados aqui
   // (e não só no DOM) para não serem perdidos quando um re-render é disparado
   // por uma mudança vinda de OUTRO aparelho enquanto alguém está editando.
-  addTableDraft:'',
   addProductDraft:{icon:'', name:'', category:'espetinhos', price:''},
-  editTableDraft:'',
   editProductDraft:{icon:'', name:'', category:'espetinhos', price:''},
 
   // cache local, mantido em sincronia pelo Database.subscribe
@@ -840,12 +1115,22 @@ function renderMenuGrid(table){
   }).join('');
 }
 
+function renderProductIcon(iconValue){
+  const value = String(iconValue || '').trim();
+  if(!value) return '<span class="product-emoji">🍽️</span>';
+  const isImagePath = /^(https?:\/\/|data:image\/|\.\.?\/|\/)/i.test(value) || /\.(avif|gif|jpe?g|png|webp)(\?.*)?$/i.test(value);
+  if(isImagePath){
+    return `<img class="product-image-tile" src="${Utils.escapeHtml(value)}" alt="Imagem do produto" loading="lazy">`;
+  }
+  return `<span class="product-emoji">${Utils.escapeHtml(value)}</span>`;
+}
+
 function renderProductCard(product, qty){
   return `
     <div class="product-card ${qty>0?'has-qty':''}" data-add-product="${product.id}">
       ${qty>0 ? `<button class="qty-minus-btn" data-dec-product="${product.id}" data-qty="${qty}" aria-label="Remover uma unidade">${Icons.minus}</button>` : ''}
       ${qty>0 ? `<span class="qty-badge">${qty}</span>` : ''}
-      <div class="product-icon">${product.icon}</div>
+      <div class="product-icon">${renderProductIcon(product.icon)}</div>
       <div class="product-name">${Utils.escapeHtml(product.name)}</div>
       <div class="product-price">${Utils.formatCurrency(product.price)}</div>
     </div>`;
@@ -927,45 +1212,74 @@ function renderAdminView(){
   `;
 }
 
+function getNextTableNumber(){
+  const used = [...State.tables].map(t => Number(t.number)).filter(Number.isFinite).sort((a,b)=>a-b);
+  let next = 1;
+  for(const n of used){
+    if(n === next) next += 1;
+    else if(n > next) break;
+  }
+  return next;
+}
+
+function renderQuickAddTableForm(){
+  if(!State.showAddTableForm) return '';
+  return `
+    <div class="quick-add-table">
+      <div class="quick-add-table-header">
+        <h3>Nova mesa</h3>
+        <button class="icon-small-btn" data-close-table-form aria-label="Fechar">${Icons.close}</button>
+      </div>
+      <form class="form-row" id="form-add-table">
+        <div class="pill-note">Será criada automaticamente como Mesa ${Utils.pad2(getNextTableNumber())}</div>
+        <button class="btn btn-primary" type="submit">Adicionar</button>
+      </form>
+    </div>
+  `;
+}
+
 function renderAdminTables(){
-  const rows = [...State.tables].sort((a,b)=>a.number-b.number).map(t => {
-    if(State.editingTableId === t.id){
-      return `<div class="admin-list-row">
-        <div class="edit-row">
-          <input type="number" min="1" id="edit-table-number" value="${State.editTableDraft}">
-          <button class="icon-small-btn" data-save-table="${t.id}" aria-label="Salvar">${Icons.check}</button>
-          <button class="icon-small-btn" data-cancel-edit-table aria-label="Cancelar">${Icons.close}</button>
-        </div>
-      </div>`;
-    }
-    return `<div class="admin-list-row">
+  const rows = [...State.tables].sort((a,b)=>a.number-b.number).map(t => `<div class="admin-list-row">
       <div class="admin-row-main">
         <strong>Mesa ${Utils.pad2(t.number)}</strong>
         <small>${STATUS_LABEL[t.status]} · ${Utils.formatCurrency(getTableGrandTotal(t))}</small>
       </div>
       <div class="admin-row-actions">
-        <button class="icon-small-btn" data-edit-table="${t.id}" aria-label="Editar número">${Icons.edit}</button>
         <button class="icon-small-btn danger" data-remove-table="${t.id}" ${t.status!=='free'?'disabled':''} aria-label="Remover mesa" title="${t.status!=='free' ? 'Só é possível remover mesas livres' : 'Remover mesa'}">${Icons.trash}</button>
       </div>
-    </div>`;
-  }).join('');
+    </div>`).join('');
 
   return `
-    <div class="admin-panel">
-      <h2>Adicionar mesa</h2>
-      <form class="form-row" id="form-add-table">
-        <input type="number" min="1" name="number" id="add-table-number" placeholder="Número da mesa" value="${State.addTableDraft}" required>
-        <button class="btn btn-primary" type="submit">Adicionar mesa</button>
-      </form>
-    </div>
+    ${renderQuickAddTableForm()}
     <div class="admin-panel">
       <h2>Mesas cadastradas (${State.tables.length})</h2>
       ${rows || '<div class="empty-note">Nenhuma mesa cadastrada.</div>'}
+    </div>
+    <button class="floating-add-btn" data-toggle-table-form aria-label="Adicionar mesa">+</button>
+  `;
+}
+
+function renderProductAccessGate(){
+  return `
+    <div class="lock-panel">
+      <span class="emoji">🔒</span>
+      <h3>Área protegida</h3>
+      <p>Digite a senha para acessar o gerenciamento do cardápio.</p>
+      <form class="form-row" id="form-product-access" style="justify-content:center;">
+        <input type="password" id="admin-product-password" value="${Utils.escapeHtml(State.productPasswordInput)}" placeholder="Senha" required style="max-width:240px;">
+        <button class="btn btn-primary" type="submit">Entrar</button>
+      </form>
     </div>
   `;
 }
 
 function renderAdminProducts(){
+  if(!State.productAccessUnlocked){
+    return renderProductAccessGate();
+  }
+
+  const addFormPreview = State.addProductDraft.icon ? `<div class="product-icon" style="margin-left:.2rem;">${renderProductIcon(State.addProductDraft.icon)}</div>` : '';
+
   const groups = CATEGORIES.map(cat => {
     const items = State.products.filter(p=>p.category===cat.id);
     if(!items.length) return '';
@@ -973,7 +1287,8 @@ function renderAdminProducts(){
       if(State.editingProductId === p.id){
         return `<div class="admin-list-row">
           <div class="edit-row">
-            <input type="text" id="edit-prod-icon" value="${Utils.escapeHtml(State.editProductDraft.icon)}" placeholder="Ícone" style="flex:0 0 60px;text-align:center;">
+            <div class="product-icon" style="flex:0 0 48px;">${renderProductIcon(State.editProductDraft.icon)}</div>
+            <input type="text" id="edit-prod-icon" value="${Utils.escapeHtml(State.editProductDraft.icon)}" placeholder="Emoji ou URL" style="flex:0 0 110px;text-align:center;">
             <input type="text" id="edit-prod-name" value="${Utils.escapeHtml(State.editProductDraft.name)}" placeholder="Nome">
             <select id="edit-prod-category">${CATEGORIES.map(c=>`<option value="${c.id}" ${c.id===State.editProductDraft.category?'selected':''}>${c.label}</option>`).join('')}</select>
             <input type="number" step="0.01" min="0" id="edit-prod-price" value="${State.editProductDraft.price}" placeholder="Preço">
@@ -984,7 +1299,7 @@ function renderAdminProducts(){
       }
       return `<div class="admin-list-row">
         <div class="admin-row-main">
-          <strong>${p.icon} ${Utils.escapeHtml(p.name)}</strong>
+          <strong>${renderProductIcon(p.icon)} ${Utils.escapeHtml(p.name)}</strong>
           <small>${Utils.formatCurrency(p.price)}</small>
         </div>
         <div class="admin-row-actions">
@@ -1000,7 +1315,10 @@ function renderAdminProducts(){
     <div class="admin-panel">
       <h2>Adicionar produto</h2>
       <form class="form-row" id="form-add-product">
-        <input type="text" name="icon" id="add-prod-icon" placeholder="Ícone (emoji)" style="flex:0 0 110px;" maxlength="4" value="${Utils.escapeHtml(State.addProductDraft.icon)}">
+        <div style="display:flex;align-items:center;gap:.5rem;flex:0 0 auto;">
+          ${addFormPreview || '<div class="product-icon" style="flex:0 0 42px;">🍽️</div>'}
+          <input type="text" name="icon" id="add-prod-icon" placeholder="Emoji ou URL" style="flex:0 0 120px;" value="${Utils.escapeHtml(State.addProductDraft.icon)}">
+        </div>
         <input type="text" name="name" id="add-prod-name" placeholder="Nome do produto" required style="flex:1 1 180px;" value="${Utils.escapeHtml(State.addProductDraft.name)}">
         <select name="category" id="add-prod-category">${CATEGORIES.map(c=>`<option value="${c.id}" ${c.id===State.addProductDraft.category?'selected':''}>${c.label}</option>`).join('')}</select>
         <input type="number" step="0.01" min="0" name="price" id="add-prod-price" placeholder="Preço (R$)" required style="flex:0 0 130px;" value="${Utils.escapeHtml(State.addProductDraft.price)}">
@@ -1117,25 +1435,27 @@ function setupEvents(){
 
     // administração — abas
     const adminTabBtn = e.target.closest('[data-set-admin-tab]');
-    if(adminTabBtn){ State.adminTab = adminTabBtn.getAttribute('data-set-admin-tab'); State.editingTableId=null; State.editingProductId=null; State.editTableDraft=''; State.editProductDraft={icon:'',name:'',category:'espetinhos',price:''}; return render(); }
-
-    // administração — mesas
-    const editTableBtn = e.target.closest('[data-edit-table]');
-    if(editTableBtn){
-      const id = editTableBtn.getAttribute('data-edit-table');
-      const t = State.tables.find(t=>t.id===id);
-      State.editingTableId = id;
-      State.editTableDraft = t ? String(t.number) : '';
+    if(adminTabBtn){
+      State.adminTab = adminTabBtn.getAttribute('data-set-admin-tab');
+      State.editingTableId=null;
+      State.editingProductId=null;
+      State.editTableDraft='';
+      State.editProductDraft={icon:'',name:'',category:'espetinhos',price:''};
+      if(State.adminTab !== 'produtos') State.productPasswordInput = '';
       return render();
     }
-    if(e.target.closest('[data-cancel-edit-table]')){ State.editingTableId=null; State.editTableDraft=''; return render(); }
-    const saveTableBtn = e.target.closest('[data-save-table]');
-    if(saveTableBtn){
-      const id = saveTableBtn.getAttribute('data-save-table');
-      const num = Number(State.editTableDraft);
-      if(num > 0){ await Database.updateTable(id, {number:num}); }
-      State.editingTableId=null; State.editTableDraft=''; return;
+
+    const toggleTableFormBtn = e.target.closest('[data-toggle-table-form]');
+    if(toggleTableFormBtn){
+      State.showAddTableForm = !State.showAddTableForm;
+      return render();
     }
+    if(e.target.closest('[data-close-table-form]')){
+      State.showAddTableForm = false;
+      return render();
+    }
+
+    // administração — mesas
     const removeTableBtn = e.target.closest('[data-remove-table]');
     if(removeTableBtn && !removeTableBtn.disabled){
       const id = removeTableBtn.getAttribute('data-remove-table');
@@ -1186,8 +1506,7 @@ function setupEvents(){
   app.addEventListener('input', (e) => {
     const id = e.target.id;
     if(id === 'product-search-input'){ State.productSearch = e.target.value; return render(); }
-    if(id === 'add-table-number'){ State.addTableDraft = e.target.value; return; }
-    if(id === 'edit-table-number'){ State.editTableDraft = e.target.value; return; }
+    if(id === 'admin-product-password'){ State.productPasswordInput = e.target.value; return; }
     if(id === 'add-prod-icon'){ State.addProductDraft.icon = e.target.value; return; }
     if(id === 'add-prod-name'){ State.addProductDraft.name = e.target.value; return; }
     if(id === 'add-prod-category'){ State.addProductDraft.category = e.target.value; return; }
@@ -1202,14 +1521,24 @@ function setupEvents(){
   app.addEventListener('submit', async (e) => {
     if(e.target.id === 'form-add-table'){
       e.preventDefault();
-      const num = Number(new FormData(e.target).get('number'));
-      if(num > 0){
-        await Database.addTable(num);
-        State.addTableDraft = '';
-        showToast('Mesa adicionada');
+      const nextNumber = getNextTableNumber();
+      await Database.addTable(nextNumber);
+      State.showAddTableForm = false;
+      showToast('Mesa adicionada');
+      return render();
+    }
+    if(e.target.id === 'form-product-access'){
+      e.preventDefault();
+      const typed = String(State.productPasswordInput || '').trim();
+      if(typed === PRODUCTS_PASSWORD){
+        State.productAccessUnlocked = true;
+        State.productPasswordInput = '';
+        showToast('Acesso liberado');
         return render();
       }
-      return;
+      State.productPasswordInput = '';
+      showToast('Senha incorreta');
+      return render();
     }
     if(e.target.id === 'form-add-product'){
       e.preventDefault();
