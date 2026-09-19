@@ -63,10 +63,6 @@
     padding:.7rem .9rem;background:var(--color-surface);
     border-bottom:1px solid var(--color-border);
   }
-  .connection-status{display:flex;align-items:center;gap:.35rem;color:var(--color-text-muted);font-size:.68rem;font-weight:800;white-space:nowrap;}
-  .connection-dot{width:.5rem;height:.5rem;border-radius:50%;background:var(--color-primary);}
-  .connection-status.offline{color:var(--color-danger);}
-  .connection-status.offline .connection-dot{background:var(--color-danger);}
   .brand{display:flex;align-items:center;gap:.55rem;min-width:0;}
   .brand-mark{
     font-size:1.45rem;width:2.3rem;height:2.3rem;border-radius:999px;
@@ -390,48 +386,12 @@ const CATEGORIES = [
 const DEFAULT_ICON_BY_CATEGORY = {
   espetinhos:'🍢', porcoes:'🍟', bebidas:'🍺', refrigerantes:'🥤', diversos:'🍬', outros:'🍽️'
 };
-const REMOVED_PRODUCT_NAMES = new Set(['suco']);
 const ESTABLISHMENT_LOGO = 'imagens/logo.png';
 const PRODUCTS_PASSWORD = '1234';
 
 function categoryLabel(id){
   const c = CATEGORIES.find(c=>c.id===id);
   return c ? c.label : 'Outros';
-}
-
-function buildSeedProducts(){
-  // Usado apenas UMA VEZ, para popular o Firestore quando a coleção "products" estiver vazia.
-  return [
-    {name:'Espetinho de Calabresa', category:'espetinhos',    price:5.00,  icon:'imagens/calabresa.png'},
-    {name:'Espetinho de Carne',     category:'espetinhos',    price:5.00,  icon:'imagens/carne.png'},
-    {name:'Espetinho de Carne Moída', category:'espetinhos',  price:5.00,  icon:'imagens/moida.png'},
-    {name:'Espetinho de Língua',    category:'espetinhos',    price:5.00,  icon:'imagens/lingua.png'},
-    {name:'Espetinho de Porco',     category:'espetinhos',    price:5.00,  icon:'imagens/porco.png'},
-    {name:'Espetinho de Frango',    category:'espetinhos',    price:7.00,  icon:'imagens/frango.png'},
-    {name:'Espetinho de Queijo',    category:'espetinhos',    price:7.50,  icon:'🧀'},
-    {name:'Batata Frita',           category:'porcoes',       price:18.00, icon:'🍟'},
-    {name:'Macaxeira',              category:'porcoes',       price:15.00, icon:'🥔'},
-    {name:'Caldo',                  category:'porcoes',       price:12.00, icon:'🍲'},
-    {name:'Porção Especial',        category:'porcoes',       price:38.00, icon:'🍽️'},
-    {name:'Coca-Cola',              category:'refrigerantes', price:6.00,  icon:'imagens/coca.png'},
-    {name:'Coca-Cola Zero',         category:'refrigerantes', price:6.00,  icon:'imagens/coca.png'},
-    {name:'Guaraná',                category:'refrigerantes', price:6.00,  icon:'🥤'},
-    {name:'Refrigerante Lata',      category:'refrigerantes', price:5.00,  icon:'imagens/lata.png'},
-    {name:'Água',                   category:'bebidas',       price:4.00,  icon:'imagens/agua.png'},
-    {name:'Montilla (garrafa)',     category:'bebidas',       price:40.00, icon:'imagens/montilla.png'},
-    {name:'Montilla (dose)',        category:'bebidas',       price:5.00,  icon:'imagens/montilla.png'},
-    {name:'Dreher (garrafa)',       category:'bebidas',       price:30.00, icon:'🥃'},
-    {name:'Dreher (dose)',          category:'bebidas',       price:4.00,  icon:'🥃'},
-    {name:'Ypióca',                 category:'bebidas',       price:10.00, icon:'🥃'},
-    {name:'Pitú',                   category:'bebidas',       price:8.00,  icon:'imagens/pitu.png'},
-    {name:'Pitú Limão',             category:'bebidas',       price:8.00,  icon:'imagens/pitu_limao.png'},
-    {name:'Cerveja',                category:'bebidas',       price:5.00,  icon:'imagens/cerveja.png'},
-    {name:'Red Bull',               category:'refrigerantes', price:12.00, icon:'🥤'},
-    {name:'Coca-Cola 1L',           category:'refrigerantes', price:8.00,  icon:'imagens/coca.png'},
-    {name:'Água Mineral',           category:'bebidas',       price:2.00,  icon:'imagens/agua.png'},
-    {name:'Trident',                category:'diversos',     price:3.00,  icon:'🍬'},
-    {name:'Halls',                  category:'diversos',     price:2.00,  icon:'🍬'}
-  ];
 }
 
 /* ==================== 4. CAMADA DE BANCO DE DADOS ======================== */
@@ -495,20 +455,11 @@ const Database = (function(){
   const cache = {tables:[], products:[], history:[]};
   const ready = {tables:false, products:false, history:false};
   const healthy = {tables:false, products:false, history:false};
-  const statusListeners = [];
   let fallbackMode = false;
-  let browserOffline = typeof navigator !== 'undefined' && navigator.onLine === false;
-
-  function isOffline(){ return browserOffline || fallbackMode; }
-
-  function notifyStatus(){
-    statusListeners.forEach(fn => { try{ fn(isOffline()); }catch(e){ console.error(e); } });
-  }
 
   function setFallbackMode(value){
     if(fallbackMode === value) return;
     fallbackMode = value;
-    notifyStatus();
     if(value){
       cache.tables = readLocalList(STORAGE_KEYS.tables, []);
       cache.products = readLocalList(STORAGE_KEYS.products, []);
@@ -517,23 +468,6 @@ const Database = (function(){
       notify();
     }
   }
-
-  function setBrowserOffline(value){
-    if(browserOffline === value) return;
-    browserOffline = value;
-    if(value){
-      setFallbackMode(true);
-    } else {
-      healthy.tables = false;
-      healthy.products = false;
-      healthy.history = false;
-      setFallbackMode(false);
-      notifyStatus();
-    }
-  }
-
-  window.addEventListener('offline', () => setBrowserOffline(true));
-  window.addEventListener('online', () => setBrowserOffline(false));
 
   function isReady(){ return ready.tables && ready.products && ready.history; }
 
@@ -582,14 +516,6 @@ const Database = (function(){
   }
 
   function ensureLocalSeed(){
-    const localProducts = readLocalList(STORAGE_KEYS.products, []);
-    const activeLocalProducts = localProducts.filter(product => !REMOVED_PRODUCT_NAMES.has(String(product.name || '').trim().toLowerCase()));
-    if(activeLocalProducts.length !== localProducts.length){
-      writeLocalList(STORAGE_KEYS.products, activeLocalProducts);
-    }
-    if(!activeLocalProducts.length){
-      writeLocalList(STORAGE_KEYS.products, buildSeedProducts().map((p, idx) => ({id: String(idx + 1), ...p})));
-    }
     if(!readLocalList(STORAGE_KEYS.tables, []).length){
       const seedTables = Array.from({length:12}, (_, i) => ({
         id: String(i + 1),
@@ -709,31 +635,7 @@ const Database = (function(){
   // (coleções vazias). Não roda de novo depois disso.
   async function ensureSeed(){
     try{
-      const [pSnap, tSnap] = await Promise.all([
-        firebaseWithTimeout(() => productsRef.limit(1).get()),
-        firebaseWithTimeout(() => tablesRef.limit(1).get())
-      ]);
-      if(pSnap.empty){
-        const batch = firestore.batch();
-        const localProducts = readLocalList(STORAGE_KEYS.products, []);
-        const productsToSeed = localProducts.length ? localProducts : buildSeedProducts();
-        productsToSeed.forEach(p => {
-          const ref = p.id ? productsRef.doc(String(p.id)) : productsRef.doc();
-          const {id, ...product} = p;
-          batch.set(ref, product);
-        });
-        await firebaseWithTimeout(() => batch.commit());
-      }
-      const catalogSnap = await firebaseWithTimeout(() => productsRef.get());
-      const existingProductNames = new Set(catalogSnap.docs.map(doc => String(doc.data().name || '').trim().toLowerCase()));
-      const missingProducts = buildSeedProducts().filter(product => !existingProductNames.has(product.name.toLowerCase()));
-      const removedProductDocs = catalogSnap.docs.filter(doc => REMOVED_PRODUCT_NAMES.has(String(doc.data().name || '').trim().toLowerCase()));
-      if(missingProducts.length || removedProductDocs.length){
-        const batch = firestore.batch();
-        missingProducts.forEach(product => batch.set(productsRef.doc(), product));
-        removedProductDocs.forEach(doc => batch.delete(doc.ref));
-        await firebaseWithTimeout(() => batch.commit());
-      }
+      const tSnap = await firebaseWithTimeout(() => tablesRef.limit(1).get());
       if(tSnap.empty){
         const batch = firestore.batch();
         for(let n=1; n<=12; n++){ batch.set(tablesRef.doc(), {number:n, status:'free', openedAt:null, orderItems:[], draft:[]}); }
@@ -758,12 +660,6 @@ const Database = (function(){
       if(isReady()) fn(); // já havia dados: entrega o estado atual imediatamente
       return () => { const i=listeners.indexOf(fn); if(i>=0) listeners.splice(i,1); };
     },
-    subscribeStatus(fn){
-      statusListeners.push(fn);
-      fn(isOffline());
-      return () => { const i=statusListeners.indexOf(fn); if(i>=0) statusListeners.splice(i,1); };
-    },
-    isOffline,
     isReady,
 
     // ---- leitura (a partir do cache mantido pelo onSnapshot) ----
@@ -1145,7 +1041,6 @@ function render(){
 }
 
 function renderTopbar(){
-  const offline = Database.isOffline();
   return `
   <header class="topbar">
     <div class="brand">
@@ -1158,7 +1053,6 @@ function renderTopbar(){
       </div>
     </div>
     <nav class="topnav">
-      <span class="connection-status ${offline?'offline':''}" title="${offline?'Este aparelho está usando dados locais e não está sincronizado':'Sincronizado com o Firebase'}"><span class="connection-dot"></span>${offline?'Offline':'Online'}</span>
       <button class="navbtn ${State.view==='dashboard'?'active':''}" data-nav="dashboard">Painel</button>
       <button class="navbtn ${State.view==='admin'?'active':''}" data-nav="admin">Administração</button>
     </nav>
@@ -1824,7 +1718,6 @@ async function init(){
     await refreshCache();
     render();
   });
-  Database.subscribeStatus(() => render());
   setupEvents();
   render();
 }
