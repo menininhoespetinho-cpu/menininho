@@ -497,11 +497,18 @@ const Database = (function(){
   const healthy = {tables:false, products:false, history:false};
   const statusListeners = [];
   let fallbackMode = false;
+  let browserOffline = typeof navigator !== 'undefined' && navigator.onLine === false;
+
+  function isOffline(){ return browserOffline || fallbackMode; }
+
+  function notifyStatus(){
+    statusListeners.forEach(fn => { try{ fn(isOffline()); }catch(e){ console.error(e); } });
+  }
 
   function setFallbackMode(value){
     if(fallbackMode === value) return;
     fallbackMode = value;
-    statusListeners.forEach(fn => { try{ fn(fallbackMode); }catch(e){ console.error(e); } });
+    notifyStatus();
     if(value){
       cache.tables = readLocalList(STORAGE_KEYS.tables, []);
       cache.products = readLocalList(STORAGE_KEYS.products, []);
@@ -510,6 +517,23 @@ const Database = (function(){
       notify();
     }
   }
+
+  function setBrowserOffline(value){
+    if(browserOffline === value) return;
+    browserOffline = value;
+    if(value){
+      setFallbackMode(true);
+    } else {
+      healthy.tables = false;
+      healthy.products = false;
+      healthy.history = false;
+      setFallbackMode(false);
+      notifyStatus();
+    }
+  }
+
+  window.addEventListener('offline', () => setBrowserOffline(true));
+  window.addEventListener('online', () => setBrowserOffline(false));
 
   function isReady(){ return ready.tables && ready.products && ready.history; }
 
@@ -736,10 +760,10 @@ const Database = (function(){
     },
     subscribeStatus(fn){
       statusListeners.push(fn);
-      fn(fallbackMode);
+      fn(isOffline());
       return () => { const i=statusListeners.indexOf(fn); if(i>=0) statusListeners.splice(i,1); };
     },
-    isOffline(){ return fallbackMode; },
+    isOffline,
     isReady,
 
     // ---- leitura (a partir do cache mantido pelo onSnapshot) ----
