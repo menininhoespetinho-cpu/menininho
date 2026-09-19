@@ -67,7 +67,9 @@
   .brand-mark{
     font-size:1.45rem;width:2.3rem;height:2.3rem;border-radius:999px;
     background:var(--color-primary-light);display:flex;align-items:center;justify-content:center;flex:0 0 auto;
+    overflow:hidden;
   }
+  .brand-logo{width:100%;height:100%;object-fit:cover;display:block;}
   .brand-text{min-width:0;}
   .brand-text strong{display:block;font-size:.98rem;line-height:1.1;}
   .brand-text small{display:block;color:var(--color-text-muted);font-size:.68rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -366,6 +368,7 @@ const CATEGORIES = [
 const DEFAULT_ICON_BY_CATEGORY = {
   espetinhos:'🍢', porcoes:'🍟', bebidas:'🍺', refrigerantes:'🥤', sucos:'🧃', outros:'🍽️'
 };
+const ESTABLISHMENT_LOGO = 'imagens/logo.png';
 const PRODUCTS_PASSWORD = '1234';
 
 function categoryLabel(id){
@@ -376,23 +379,51 @@ function categoryLabel(id){
 function buildSeedProducts(){
   // Usado apenas UMA VEZ, para popular o Firestore quando a coleção "products" estiver vazia.
   return [
-    {name:'Espetinho de Carne',     category:'espetinhos',    price:8.00,  icon:'🍢'},
-    {name:'Espetinho de Frango',    category:'espetinhos',    price:7.00,  icon:'🍗'},
+    {name:'Espetinho de Carne',     category:'espetinhos',    price:8.00,  icon:'imagens/carne.png'},
+    {name:'Espetinho de Frango',    category:'espetinhos',    price:7.00,  icon:'imagens/frango.png'},
     {name:'Espetinho de Queijo',    category:'espetinhos',    price:7.50,  icon:'🧀'},
-    {name:'Espetinho de Calabresa', category:'espetinhos',    price:7.00,  icon:'🌭'},
+    {name:'Espetinho de Calabresa', category:'espetinhos',    price:7.00,  icon:'imagens/calabresa.png'},
     {name:'Batata Frita',           category:'porcoes',       price:18.00, icon:'🍟'},
     {name:'Macaxeira',              category:'porcoes',       price:15.00, icon:'🥔'},
     {name:'Caldo',                  category:'porcoes',       price:12.00, icon:'🍲'},
     {name:'Porção Especial',        category:'porcoes',       price:38.00, icon:'🍽️'},
-    {name:'Coca-Cola',              category:'refrigerantes', price:6.00,  icon:'🥤'},
-    {name:'Coca-Cola Zero',         category:'refrigerantes', price:6.00,  icon:'🥤'},
+    {name:'Coca-Cola',              category:'refrigerantes', price:6.00,  icon:'imagens/coca.png'},
+    {name:'Coca-Cola Zero',         category:'refrigerantes', price:6.00,  icon:'imagens/coca.png'},
     {name:'Guaraná',                category:'refrigerantes', price:6.00,  icon:'🥤'},
-    {name:'Refrigerante Lata',      category:'refrigerantes', price:5.00,  icon:'🥫'},
-    {name:'Água',                   category:'bebidas',       price:4.00,  icon:'💧'},
+    {name:'Refrigerante Lata',      category:'refrigerantes', price:5.00,  icon:'imagens/lata.png'},
+    {name:'Água',                   category:'bebidas',       price:4.00,  icon:'imagens/agua.png'},
     {name:'Suco',                   category:'sucos',         price:7.50,  icon:'🧃'},
-    {name:'Cerveja',                category:'bebidas',       price:8.00,  icon:'🍺'}
+    {name:'Cerveja',                category:'bebidas',       price:8.00,  icon:'imagens/cerveja.png'}
   ];
 }
+
+const PRODUCT_IMAGE_BY_NAME = {
+  'espeto de carne':'imagens/carne.png',
+  'espetinho de carne':'imagens/carne.png',
+  'espeto de frango':'imagens/frango.png',
+  'espetinho de frango':'imagens/frango.png',
+  'espeto de calabresa':'imagens/calabresa.png',
+  'espetinho de calabresa':'imagens/calabresa.png',
+  'coca-cola':'imagens/coca.png',
+  'coca cola':'imagens/coca.png',
+  'coca-cola zero':'imagens/coca.png',
+  'coca cola zero':'imagens/coca.png',
+  'refrigerante lata':'imagens/lata.png',
+  'lata':'imagens/lata.png',
+  'montilla':'imagens/montilla.png',
+  'linguiça':'imagens/calabresa.png',
+  'carne moída':'imagens/moida.png',
+  'linguiça moída':'imagens/moida.png',
+  'porco':'imagens/porco.png',
+  'língua':'imagens/lingua.png',
+  'lingua':'imagens/lingua.png',
+  'pitu':'imagens/pitu.png',
+  'pitu limão':'imagens/pitu_limao.png',
+  'pitu limao':'imagens/pitu_limao.png',
+  'cerveja':'imagens/cerveja.png',
+  'água':'imagens/agua.png',
+  'agua':'imagens/agua.png'
+};
 
 /* ==================== 4. CAMADA DE BANCO DE DADOS ======================== */
 /*
@@ -954,7 +985,9 @@ function renderTopbar(){
   return `
   <header class="topbar">
     <div class="brand">
-      <div class="brand-mark">🍢</div>
+      <div class="brand-mark">
+        <img class="brand-logo" src="${ESTABLISHMENT_LOGO}" alt="Logo do estabelecimento" onerror="this.style.display='none';this.parentElement.textContent='🍢';">
+      </div>
       <div class="brand-text">
         <strong>Menininho</strong>
         <small>Espetinho &amp; Conveniência</small>
@@ -1115,14 +1148,16 @@ function renderMenuGrid(table){
   }).join('');
 }
 
-function renderProductIcon(iconValue){
+function renderProductIcon(iconValue, productName){
   const value = String(iconValue || '').trim();
-  if(!value) return '<span class="product-emoji">🍽️</span>';
-  const isImagePath = /^(https?:\/\/|data:image\/|\.\.?\/|\/)/i.test(value) || /\.(avif|gif|jpe?g|png|webp)(\?.*)?$/i.test(value);
+  const mappedImage = PRODUCT_IMAGE_BY_NAME[String(productName || '').trim().toLowerCase()];
+  const displayValue = mappedImage || value;
+  if(!displayValue) return '<span class="product-emoji">🍽️</span>';
+  const isImagePath = /^(https?:\/\/|data:image\/|\.\.?\/|\/)/i.test(displayValue) || /\.(avif|gif|jpe?g|png|webp)(\?.*)?$/i.test(displayValue);
   if(isImagePath){
-    return `<img class="product-image-tile" src="${Utils.escapeHtml(value)}" alt="Imagem do produto" loading="lazy">`;
+    return `<img class="product-image-tile" src="${Utils.escapeHtml(displayValue)}" alt="Imagem do produto" loading="lazy">`;
   }
-  return `<span class="product-emoji">${Utils.escapeHtml(value)}</span>`;
+  return `<span class="product-emoji">${Utils.escapeHtml(displayValue)}</span>`;
 }
 
 function renderProductCard(product, qty){
@@ -1130,7 +1165,7 @@ function renderProductCard(product, qty){
     <div class="product-card ${qty>0?'has-qty':''}" data-add-product="${product.id}">
       ${qty>0 ? `<button class="qty-minus-btn" data-dec-product="${product.id}" data-qty="${qty}" aria-label="Remover uma unidade">${Icons.minus}</button>` : ''}
       ${qty>0 ? `<span class="qty-badge">${qty}</span>` : ''}
-      <div class="product-icon">${renderProductIcon(product.icon)}</div>
+      <div class="product-icon">${renderProductIcon(product.icon, product.name)}</div>
       <div class="product-name">${Utils.escapeHtml(product.name)}</div>
       <div class="product-price">${Utils.formatCurrency(product.price)}</div>
     </div>`;
@@ -1250,12 +1285,11 @@ function renderAdminTables(){
     </div>`).join('');
 
   return `
-    ${renderQuickAddTableForm()}
     <div class="admin-panel">
       <h2>Mesas cadastradas (${State.tables.length})</h2>
       ${rows || '<div class="empty-note">Nenhuma mesa cadastrada.</div>'}
     </div>
-    <button class="floating-add-btn" data-toggle-table-form aria-label="Adicionar mesa">+</button>
+    <button class="floating-add-btn" data-add-table aria-label="Adicionar mesa" title="Adicionar mesa">+</button>
   `;
 }
 
@@ -1299,7 +1333,7 @@ function renderAdminProducts(){
       }
       return `<div class="admin-list-row">
         <div class="admin-row-main">
-          <strong>${renderProductIcon(p.icon)} ${Utils.escapeHtml(p.name)}</strong>
+          <strong>${renderProductIcon(p.icon, p.name)} ${Utils.escapeHtml(p.name)}</strong>
           <small>${Utils.formatCurrency(p.price)}</small>
         </div>
         <div class="admin-row-actions">
@@ -1445,13 +1479,11 @@ function setupEvents(){
       return render();
     }
 
-    const toggleTableFormBtn = e.target.closest('[data-toggle-table-form]');
-    if(toggleTableFormBtn){
-      State.showAddTableForm = !State.showAddTableForm;
-      return render();
-    }
-    if(e.target.closest('[data-close-table-form]')){
-      State.showAddTableForm = false;
+    const addTableBtn = e.target.closest('[data-add-table]');
+    if(addTableBtn){
+      const nextNumber = getNextTableNumber();
+      await Database.addTable(nextNumber);
+      showToast('Mesa ' + Utils.pad2(nextNumber) + ' adicionada');
       return render();
     }
 
