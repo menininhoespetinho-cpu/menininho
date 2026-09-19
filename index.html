@@ -63,6 +63,10 @@
     padding:.7rem .9rem;background:var(--color-surface);
     border-bottom:1px solid var(--color-border);
   }
+  .connection-status{display:flex;align-items:center;gap:.35rem;color:var(--color-text-muted);font-size:.68rem;font-weight:800;white-space:nowrap;}
+  .connection-dot{width:.5rem;height:.5rem;border-radius:50%;background:var(--color-primary);}
+  .connection-status.offline{color:var(--color-danger);}
+  .connection-status.offline .connection-dot{background:var(--color-danger);}
   .brand{display:flex;align-items:center;gap:.55rem;min-width:0;}
   .brand-mark{
     font-size:1.45rem;width:2.3rem;height:2.3rem;border-radius:999px;
@@ -159,6 +163,21 @@
   }
   .table-total-banner span{opacity:.7;font-size:.8rem;font-weight:700;}
   .table-total-banner strong{font-size:1.65rem;}
+  .checkout-review{max-width:720px;margin:0 auto;}
+  .checkout-review-header{display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;}
+  .checkout-review-header h1{margin:0;font-size:1.35rem;}
+  .checkout-review-subtitle{color:var(--color-text-muted);font-size:.82rem;font-weight:700;margin:.2rem 0 0;}
+  .checkout-review-list{background:var(--color-surface);border:1.5px solid var(--color-border);border-radius:var(--radius-lg);padding:.35rem 1rem;box-shadow:var(--shadow-sm);}
+  .checkout-review-item{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.85rem 0;border-bottom:1px solid var(--color-border);}
+  .checkout-review-item:last-child{border-bottom:none;}
+  .checkout-review-item strong{display:block;font-size:.9rem;}
+  .checkout-review-item small{display:block;color:var(--color-text-muted);font-size:.76rem;font-weight:600;margin-top:.15rem;}
+  .checkout-review-item-total{font-weight:800;white-space:nowrap;}
+  .checkout-review-total{display:flex;justify-content:space-between;align-items:center;background:var(--color-text);color:#fff;border-radius:var(--radius-lg);padding:1rem 1.25rem;margin-top:.85rem;}
+  .checkout-review-total span{font-size:.82rem;opacity:.75;font-weight:700;}
+  .checkout-review-total strong{font-size:1.5rem;}
+  .checkout-review-actions{display:flex;flex-direction:column;gap:.6rem;margin-top:1rem;}
+  .checkout-review-actions .btn{min-height:3rem;}
 
   .table-actions{display:flex;gap:.6rem;margin-bottom:1.1rem;flex-wrap:wrap;}
   .btn{border:none;border-radius:999px;padding:.7rem 1.25rem;font-weight:800;font-size:.85rem;cursor:pointer;}
@@ -293,10 +312,13 @@
 
   .empty-state{text-align:center;padding:2.4rem 1rem;color:var(--color-text-muted);}
   .empty-state .emoji{font-size:2.2rem;display:block;margin-bottom:.5rem;}
+  .loading-state{min-height:100vh;display:flex;align-items:center;justify-content:center;gap:.6rem;color:var(--color-text-muted);font-weight:800;}
+  .loading-state::before{content:'';width:1rem;height:1rem;border:2px solid var(--color-border);border-top-color:var(--color-primary);border-radius:50%;animation:spin .8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
 </style>
 </head>
 <body>
-<div id="app"></div>
+<div id="app"><div class="loading-state">Carregando dados...</div></div>
 <div id="toast"></div>
 
 <script>
@@ -397,34 +419,6 @@ function buildSeedProducts(){
   ];
 }
 
-const PRODUCT_IMAGE_BY_NAME = {
-  'espeto de carne':'imagens/carne.png',
-  'espetinho de carne':'imagens/carne.png',
-  'espeto de frango':'imagens/frango.png',
-  'espetinho de frango':'imagens/frango.png',
-  'espeto de calabresa':'imagens/calabresa.png',
-  'espetinho de calabresa':'imagens/calabresa.png',
-  'coca-cola':'imagens/coca.png',
-  'coca cola':'imagens/coca.png',
-  'coca-cola zero':'imagens/coca.png',
-  'coca cola zero':'imagens/coca.png',
-  'refrigerante lata':'imagens/lata.png',
-  'lata':'imagens/lata.png',
-  'montilla':'imagens/montilla.png',
-  'linguiça':'imagens/calabresa.png',
-  'carne moída':'imagens/moida.png',
-  'linguiça moída':'imagens/moida.png',
-  'porco':'imagens/porco.png',
-  'língua':'imagens/lingua.png',
-  'lingua':'imagens/lingua.png',
-  'pitu':'imagens/pitu.png',
-  'pitu limão':'imagens/pitu_limao.png',
-  'pitu limao':'imagens/pitu_limao.png',
-  'cerveja':'imagens/cerveja.png',
-  'água':'imagens/agua.png',
-  'agua':'imagens/agua.png'
-};
-
 /* ==================== 4. CAMADA DE BANCO DE DADOS ======================== */
 /*
   Abstração de persistência. Toda a aplicação fala apenas com "Database",
@@ -485,10 +479,12 @@ const Database = (function(){
   const listeners = [];
   const cache = {tables:[], products:[], history:[]};
   const ready = {tables:false, products:false, history:false};
+  const statusListeners = [];
   let fallbackMode = false;
 
   function setFallbackMode(value){
     fallbackMode = value;
+    statusListeners.forEach(fn => { try{ fn(fallbackMode); }catch(e){ console.error(e); } });
     if(value){
       cache.tables = readLocalList(STORAGE_KEYS.tables, []);
       cache.products = readLocalList(STORAGE_KEYS.products, []);
@@ -524,6 +520,11 @@ const Database = (function(){
   const productsRef = firestore.collection('products');
   const historyRef = firestore.collection('history');
 
+  function tableSnapshotData(snapshot){
+    const d = snapshot.data();
+    return {id:snapshot.id, number:d.number, status:d.status, openedAt:d.openedAt||null, orderItems:d.orderItems||[], draft:d.draft||[], cancelledItems:d.cancelledItems||[]};
+  }
+
   function onSnapshotError(label){
     return (err) => {
       console.error('Erro ao ouvir "'+label+'":', err);
@@ -554,12 +555,18 @@ const Database = (function(){
 
   async function localAddTable(number){
     const tables = readLocalList(STORAGE_KEYS.tables, []);
+    if(!Number.isFinite(Number(number))){
+      const used = tables.map(t => Number(t.number)).filter(Number.isFinite).sort((a,b)=>a-b);
+      number = 1;
+      for(const current of used){ if(current === number) number += 1; else if(current > number) break; }
+    }
     const nextId = String(Date.now()) + '-' + Math.random().toString(16).slice(2, 8);
     tables.push({id: nextId, number, status:'free', openedAt:null, orderItems:[], draft:[]});
     writeLocalList(STORAGE_KEYS.tables, tables.sort((a,b)=>a.number-b.number));
     cache.tables = tables.slice();
     ready.tables = true;
     notify();
+    return number;
   }
 
   async function localRemoveTable(tableId){
@@ -622,7 +629,7 @@ const Database = (function(){
 
   tablesRef.onSnapshot(snap => {
     cache.tables = snap.docs
-      .map(doc => { const d=doc.data(); return {id:doc.id, number:d.number, status:d.status, openedAt:d.openedAt||null, orderItems:d.orderItems||[], draft:d.draft||[]}; })
+      .map(doc => { const d=doc.data(); return {id:doc.id, number:d.number, status:d.status, openedAt:d.openedAt||null, orderItems:d.orderItems||[], draft:d.draft||[], cancelledItems:d.cancelledItems||[]}; })
       .sort((a,b)=> a.number-b.number);
     ready.tables = true; notify();
   }, onSnapshotError('mesas'));
@@ -676,6 +683,12 @@ const Database = (function(){
       if(isReady()) fn(); // já havia dados: entrega o estado atual imediatamente
       return () => { const i=listeners.indexOf(fn); if(i>=0) listeners.splice(i,1); };
     },
+    subscribeStatus(fn){
+      statusListeners.push(fn);
+      fn(fallbackMode);
+      return () => { const i=statusListeners.indexOf(fn); if(i>=0) statusListeners.splice(i,1); };
+    },
+    isOffline(){ return fallbackMode; },
     isReady,
 
     // ---- leitura (a partir do cache mantido pelo onSnapshot) ----
@@ -686,67 +699,96 @@ const Database = (function(){
 
     // ---- pedido / carrinho ----
     async addDraftItem(tableId, productId){
-      const t = findTable(tableId);
       const product = findProduct(productId);
-      const draft = t.draft.map(i=>({...i}));
-      const existing = draft.find(i=>i.productId===productId);
-      if(existing) existing.quantity += 1;
-      else draft.push({productId, name:product.name, unitPrice:product.price, quantity:1});
       if(fallbackMode){
+        const t = findTable(tableId);
+        const draft = t.draft.map(i=>({...i}));
+        const existing = draft.find(i=>i.productId===productId);
+        if(existing) existing.quantity += 1;
+        else draft.push({productId, name:product.name, unitPrice:product.price, quantity:1});
         const tables = readLocalList(STORAGE_KEYS.tables, []).map(table => table.id === tableId ? {...table, draft} : table);
         writeLocalList(STORAGE_KEYS.tables, tables);
         cache.tables = tables.slice();
         notify();
         return;
       }
-      await tablesRef.doc(tableId).update({draft});
+      await firestore.runTransaction(async transaction => {
+        const snapshot = await transaction.get(tablesRef.doc(tableId));
+        const t = tableSnapshotData(snapshot);
+        const draft = t.draft.map(i=>({...i}));
+        const existing = draft.find(i=>i.productId===productId);
+        if(existing) existing.quantity += 1;
+        else draft.push({productId, name:product.name, unitPrice:product.price, quantity:1});
+        transaction.update(tablesRef.doc(tableId), {draft});
+      });
     },
     async setDraftQty(tableId, productId, qty){
-      const t = findTable(tableId);
       qty = Math.max(0, Math.floor(qty));
-      let draft = t.draft.map(i=>({...i}));
-      if(qty === 0) draft = draft.filter(i=>i.productId!==productId);
-      else { const existing = draft.find(i=>i.productId===productId); if(existing) existing.quantity = qty; }
       if(fallbackMode){
+        const t = findTable(tableId);
+        let draft = t.draft.map(i=>({...i}));
+        if(qty === 0) draft = draft.filter(i=>i.productId!==productId);
+        else { const existing = draft.find(i=>i.productId===productId); if(existing) existing.quantity = qty; }
         const tables = readLocalList(STORAGE_KEYS.tables, []).map(table => table.id === tableId ? {...table, draft} : table);
         writeLocalList(STORAGE_KEYS.tables, tables);
         cache.tables = tables.slice();
         notify();
         return;
       }
-      await tablesRef.doc(tableId).update({draft});
+      await firestore.runTransaction(async transaction => {
+        const ref = tablesRef.doc(tableId);
+        const snapshot = await transaction.get(ref);
+        const draft = tableSnapshotData(snapshot).draft.map(i=>({...i}));
+        if(qty === 0) {
+          transaction.update(ref, {draft:draft.filter(i=>i.productId!==productId)});
+        } else {
+          const existing = draft.find(i=>i.productId===productId);
+          if(existing) existing.quantity = qty;
+          transaction.update(ref, {draft});
+        }
+      });
     },
     async removeDraftItem(tableId, productId){
-      const t = findTable(tableId);
-      const draft = t.draft.filter(i=>i.productId!==productId);
       if(fallbackMode){
+        const t = findTable(tableId);
+        const draft = t.draft.filter(i=>i.productId!==productId);
         const tables = readLocalList(STORAGE_KEYS.tables, []).map(table => table.id === tableId ? {...table, draft} : table);
         writeLocalList(STORAGE_KEYS.tables, tables);
         cache.tables = tables.slice();
         notify();
         return;
       }
-      await tablesRef.doc(tableId).update({draft});
+      await firestore.runTransaction(async transaction => {
+        const ref = tablesRef.doc(tableId);
+        const snapshot = await transaction.get(ref);
+        const draft = tableSnapshotData(snapshot).draft.filter(i=>i.productId!==productId);
+        transaction.update(ref, {draft});
+      });
     },
     async sendOrder(tableId){
-      const t = findTable(tableId);
-      if(!t.draft.length) return;
-      const orderItems = t.orderItems.map(i=>({...i}));
-      t.draft.forEach(di => {
-        const existing = orderItems.find(i=>i.productId===di.productId);
-        if(existing) existing.quantity += di.quantity;
-        else orderItems.push({...di});
-      });
-      const patch = {orderItems, draft:[]};
-      if(t.status === 'free'){ patch.status = 'occupied'; patch.openedAt = new Date().toISOString(); }
       if(fallbackMode){
+        const t = findTable(tableId);
+        if(!t.draft.length) return;
+        const orderItems = t.orderItems.map(i=>({...i}));
+        t.draft.forEach(di => { const existing = orderItems.find(i=>i.productId===di.productId); if(existing) existing.quantity += di.quantity; else orderItems.push({...di}); });
+        const patch = {orderItems, draft:[]};
+        if(t.status === 'free'){ patch.status = 'occupied'; patch.openedAt = new Date().toISOString(); }
         const tables = readLocalList(STORAGE_KEYS.tables, []).map(table => table.id === tableId ? {...table, ...patch} : table);
         writeLocalList(STORAGE_KEYS.tables, tables);
         cache.tables = tables.slice();
         notify();
         return;
       }
-      await tablesRef.doc(tableId).update(patch);
+      await firestore.runTransaction(async transaction => {
+        const ref = tablesRef.doc(tableId);
+        const t = tableSnapshotData(await transaction.get(ref));
+        if(!t.draft.length) return;
+        const orderItems = t.orderItems.map(i=>({...i}));
+        t.draft.forEach(di => { const existing = orderItems.find(i=>i.productId===di.productId); if(existing) existing.quantity += di.quantity; else orderItems.push({...di}); });
+        const patch = {orderItems, draft:[]};
+        if(t.status === 'free'){ patch.status = 'occupied'; patch.openedAt = new Date().toISOString(); }
+        transaction.update(ref, patch);
+      });
     },
     async requestBill(tableId){
       if(fallbackMode){
@@ -756,7 +798,41 @@ const Database = (function(){
         notify();
         return;
       }
-      await tablesRef.doc(tableId).update({status:'billing'});
+      await firestore.runTransaction(async transaction => {
+        const ref = tablesRef.doc(tableId);
+        const t = tableSnapshotData(await transaction.get(ref));
+        if(t.status === 'occupied') transaction.update(ref, {status:'billing'});
+      });
+    },
+    async reopenTable(tableId){
+      if(fallbackMode){ await localUpdateTable(tableId, {status:'occupied'}); return; }
+      await firestore.runTransaction(async transaction => {
+        const ref = tablesRef.doc(tableId);
+        const t = tableSnapshotData(await transaction.get(ref));
+        if(t.status === 'billing') transaction.update(ref, {status:'occupied'});
+      });
+    },
+    async updateConfirmedItem(tableId, productId, qty, reason=''){
+      qty = Math.max(0, Math.floor(qty));
+      if(fallbackMode){
+        const t = findTable(tableId);
+        let orderItems = t.orderItems.map(i=>({...i}));
+        const cancelledItems = (t.cancelledItems||[]).map(i=>({...i}));
+        if(qty === 0) orderItems = orderItems.filter(i=>i.productId!==productId);
+        else { const item = orderItems.find(i=>i.productId===productId); if(item) item.quantity = qty; }
+        if(qty === 0 && reason) cancelledItems.push({productId, reason:reason.trim(), cancelledAt:new Date().toISOString()});
+        await localUpdateTable(tableId, {orderItems, cancelledItems});
+        return;
+      }
+      await firestore.runTransaction(async transaction => {
+        const ref = tablesRef.doc(tableId);
+        const current = tableSnapshotData(await transaction.get(ref));
+        const orderItems = current.orderItems.map(i=>({...i}));
+        const patch = {orderItems:qty === 0 ? orderItems.filter(i=>i.productId!==productId) : orderItems};
+        if(qty > 0){ const item = patch.orderItems.find(i=>i.productId===productId); if(item) item.quantity = qty; }
+        if(qty === 0 && reason) patch.cancelledItems = [...current.cancelledItems, {productId, reason:reason.trim(), cancelledAt:new Date().toISOString()}];
+        transaction.update(ref, patch);
+      });
     },
     async closeTable(tableId){
       const t = findTable(tableId);
@@ -774,24 +850,36 @@ const Database = (function(){
         ready.tables = true; ready.history = true; notify();
         return;
       }
-      if(total > 0){
-        await historyRef.add({tableNumber:t.number, closedAt:new Date().toISOString(), total, items:t.orderItems});
-      }
-      await tablesRef.doc(tableId).update({status:'free', openedAt:null, orderItems:[], draft:[]});
+      await firestore.runTransaction(async transaction => {
+        const tableRef = tablesRef.doc(tableId);
+        const current = tableSnapshotData(await transaction.get(tableRef));
+        const currentTotal = itemsTotal(current.orderItems);
+        if(currentTotal > 0){
+          transaction.set(historyRef.doc(), {tableNumber:current.number, closedAt:new Date().toISOString(), total:currentTotal, items:current.orderItems});
+        }
+        transaction.update(tableRef, {status:'free', openedAt:null, orderItems:[], draft:[]});
+      });
     },
 
     // ---- administração: mesas ----
     async addTable(number){
       if(fallbackMode){
-        await localAddTable(number);
-        return;
+        return await localAddTable(number);
       }
       try{
-        await firebaseWithTimeout(() => tablesRef.add({number, status:'free', openedAt:null, orderItems:[], draft:[]}));
+        return await firebaseWithTimeout(() => firestore.runTransaction(async transaction => {
+          const snapshot = await transaction.get(tablesRef);
+          const used = snapshot.docs.map(doc => Number(doc.data().number)).filter(Number.isFinite).sort((a,b)=>a-b);
+          let next = 1;
+          for(const current of used){ if(current === next) next += 1; else if(current > next) break; }
+          const ref = tablesRef.doc();
+          transaction.set(ref, {number:next, status:'free', openedAt:null, orderItems:[], draft:[]});
+          return next;
+        }));
       }catch(err){
         console.warn('Firestore addTable falhou; usando localStorage.', err);
         setFallbackMode(true);
-        await localAddTable(number);
+        return await localAddTable(number);
       }
     },
     async updateTable(tableId, patch){
@@ -872,6 +960,7 @@ const Database = (function(){
 const State = {
   view:'dashboard',            // 'dashboard' | 'table' | 'admin'
   currentTableId:null,
+  checkoutTableId:null,
   tableStatusFilter:'all',     // all | free | occupied | billing
   productSearch:'',
   productCategory:'all',
@@ -916,9 +1005,10 @@ function getDashboardStats(){
 }
 
 const Actions = {
-  async goToDashboard(){ State.view='dashboard'; State.currentTableId=null; render(); },
-  async openTable(tableId){ State.view='table'; State.currentTableId=tableId; State.productSearch=''; State.productCategory='all'; render(); },
+  async goToDashboard(){ State.view='dashboard'; State.currentTableId=null; State.checkoutTableId=null; render(); },
+  async openTable(tableId){ State.view='table'; State.currentTableId=tableId; State.checkoutTableId=null; State.productSearch=''; State.productCategory='all'; render(); },
   async openAdmin(){ State.view='admin'; render(); },
+  async openCheckout(tableId){ State.view='checkout'; State.currentTableId=tableId; State.checkoutTableId=tableId; render(); },
 
   async addToCart(tableId, productId){
     await Database.addDraftItem(tableId, productId);
@@ -941,10 +1031,8 @@ const Actions = {
     showToast('Conta solicitada');
   },
   async finalizeTable(tableId, total, number){
-    const ok = confirm('Finalizar a conta da Mesa '+Utils.pad2(number)+' no valor de '+Utils.formatCurrency(total)+' e liberar a mesa?\n\nEsta ação não pode ser desfeita.');
-    if(!ok) return;
     await Database.closeTable(tableId);
-    showToast('Mesa '+Utils.pad2(number)+' liberada ✓');
+    showToast('Mesa liberada ✓');
     Actions.goToDashboard();
   }
 };
@@ -982,6 +1070,7 @@ function render(){
 }
 
 function renderTopbar(){
+  const offline = Database.isOffline();
   return `
   <header class="topbar">
     <div class="brand">
@@ -994,6 +1083,7 @@ function renderTopbar(){
       </div>
     </div>
     <nav class="topnav">
+      <span class="connection-status ${offline?'offline':''}" title="${offline?'Este aparelho está usando dados locais e não está sincronizado':'Sincronizado com o Firebase'}"><span class="connection-dot"></span>${offline?'Offline':'Online'}</span>
       <button class="navbtn ${State.view==='dashboard'?'active':''}" data-nav="dashboard">Painel</button>
       <button class="navbtn ${State.view==='admin'?'active':''}" data-nav="admin">Administração</button>
     </nav>
@@ -1001,9 +1091,39 @@ function renderTopbar(){
 }
 
 function renderCurrentView(){
+  if(State.view==='checkout' && State.checkoutTableId) return renderCheckoutReview();
   if(State.view==='table' && State.currentTableId) return renderTableView();
   if(State.view==='admin') return renderAdminView();
   return renderDashboardView();
+}
+
+function renderCheckoutReview(){
+  const table = State.tables.find(t=>t.id===State.checkoutTableId);
+  if(!table){ State.view='dashboard'; State.checkoutTableId=null; return renderDashboardView(); }
+  const items = table.orderItems || [];
+  const total = calcItemsTotal(items);
+  return `
+    <section class="checkout-review">
+      <div class="checkout-review-header">
+        <button class="iconbtn" data-nav="table" data-table-id="${table.id}" aria-label="Voltar">${Icons.back}</button>
+        <div>
+          <h1>Conferência da Mesa ${Utils.pad2(table.number)}</h1>
+          <p class="checkout-review-subtitle">Confirme com o cliente tudo o que foi consumido.</p>
+        </div>
+      </div>
+      <div class="checkout-review-list">
+        ${items.length ? items.map(item => `
+          <div class="checkout-review-item">
+            <div><strong>${item.quantity}x ${Utils.escapeHtml(item.name)}</strong><small>${Utils.formatCurrency(item.unitPrice)} por unidade</small></div>
+            <span class="checkout-review-item-total">${Utils.formatCurrency(item.unitPrice * item.quantity)}</span>
+          </div>`).join('') : '<div class="empty-note">Nenhum item enviado para esta mesa.</div>'}
+      </div>
+      <div class="checkout-review-total"><span>Total consumido</span><strong>${Utils.formatCurrency(total)}</strong></div>
+      <div class="checkout-review-actions">
+        <button class="btn btn-primary btn-block" data-confirm-finalize="${table.id}" data-total="${total}" data-number="${table.number}">Concluído</button>
+        <button class="btn btn-outline btn-block" data-nav="table" data-table-id="${table.id}">Voltar e revisar</button>
+      </div>
+    </section>`;
 }
 
 /* ---------------------------- DASHBOARD ---------------------------- */
@@ -1024,9 +1144,6 @@ function renderDashboardView(){
       ${statCard(stats.free, 'Mesas livres')}
       ${statCard(stats.occupied, 'Mesas ocupadas')}
       ${statCard(stats.billing, 'Contas solicitadas')}
-      ${statCard(Utils.formatCurrency(stats.revenueToday), 'Faturamento hoje', true)}
-      ${statCard(stats.ordersToday, 'Pedidos hoje')}
-      ${statCard(Utils.formatCurrency(stats.avgTicket), 'Ticket médio')}
     </section>
 
     <div class="chip-row">
@@ -1074,7 +1191,8 @@ function renderTableView(){
   if(table.status === 'occupied'){
     actionsHtml = `<button class="btn btn-accent" data-request-bill="${table.id}" ${calcItemsTotal(table.orderItems)<=0?'disabled':''}>Solicitar conta</button>`;
   } else if(table.status === 'billing'){
-    actionsHtml = `<button class="btn btn-primary" data-finalize="${table.id}" data-total="${grandTotal}" data-number="${table.number}">Finalizar conta</button>`;
+    actionsHtml = `<button class="btn btn-primary" data-finalize="${table.id}" data-total="${grandTotal}" data-number="${table.number}">Finalizar conta</button>
+      <button class="btn btn-outline" data-reopen-table="${table.id}">Voltar para ocupada</button>`;
   }
 
   return `
@@ -1150,8 +1268,7 @@ function renderMenuGrid(table){
 
 function renderProductIcon(iconValue, productName){
   const value = String(iconValue || '').trim();
-  const mappedImage = PRODUCT_IMAGE_BY_NAME[String(productName || '').trim().toLowerCase()];
-  const displayValue = mappedImage || value;
+  const displayValue = value;
   if(!displayValue) return '<span class="product-emoji">🍽️</span>';
   const isImagePath = /^(https?:\/\/|data:image\/|\.\.?\/|\/)/i.test(displayValue) || /\.(avif|gif|jpe?g|png|webp)(\?.*)?$/i.test(displayValue);
   if(isImagePath){
@@ -1203,7 +1320,7 @@ function renderCartPanel(table){
   if(confirmed.length){
     html += `<div class="confirmed-list">
       <h3>Já registrado nesta mesa</h3>
-      ${confirmed.map(item => `<div class="confirmed-line"><span>${item.quantity}x ${Utils.escapeHtml(item.name)}</span><span>${Utils.formatCurrency(item.unitPrice*item.quantity)}</span></div>`).join('')}
+      ${confirmed.map(item => `<div class="confirmed-line"><span>${item.quantity}x ${Utils.escapeHtml(item.name)}</span><span>${Utils.formatCurrency(item.unitPrice*item.quantity)} ${State.productAccessUnlocked ? `<button class="stepper-btn" data-confirmed-dec="${item.productId}" data-qty="${item.quantity}" aria-label="Diminuir item confirmado">${Icons.minus}</button><button class="stepper-btn" data-confirmed-inc="${item.productId}" data-qty="${item.quantity}" aria-label="Aumentar item confirmado">${Icons.plus}</button><button class="cart-item-remove" data-confirmed-remove="${item.productId}" aria-label="Remover item confirmado">${Icons.trash}</button>` : ''}</span></div>`).join('')}
       <div class="confirmed-line" style="border-top:1px dashed var(--color-border);padding-top:.4rem;margin-top:.3rem;"><span>Total registrado</span><span>${Utils.formatCurrency(confirmedTotal)}</span></div>
     </div>`;
   }
@@ -1410,6 +1527,7 @@ function setupEvents(){
       const dest = navBtn.getAttribute('data-nav');
       if(dest==='dashboard') return Actions.goToDashboard();
       if(dest==='admin') return Actions.openAdmin();
+      if(dest==='table') return Actions.openTable(navBtn.getAttribute('data-table-id'));
     }
 
     // filtros do dashboard
@@ -1459,10 +1577,14 @@ function setupEvents(){
     if(billBtn){ await Actions.requestBill(billBtn.getAttribute('data-request-bill')); return; }
     const finalizeBtn = e.target.closest('[data-finalize]');
     if(finalizeBtn){
+      return Actions.openCheckout(finalizeBtn.getAttribute('data-finalize'));
+    }
+    const confirmFinalizeBtn = e.target.closest('[data-confirm-finalize]');
+    if(confirmFinalizeBtn){
       await Actions.finalizeTable(
-        finalizeBtn.getAttribute('data-finalize'),
-        Number(finalizeBtn.getAttribute('data-total')),
-        Number(finalizeBtn.getAttribute('data-number'))
+        confirmFinalizeBtn.getAttribute('data-confirm-finalize'),
+        Number(confirmFinalizeBtn.getAttribute('data-total')),
+        Number(confirmFinalizeBtn.getAttribute('data-number'))
       );
       return;
     }
@@ -1481,10 +1603,38 @@ function setupEvents(){
 
     const addTableBtn = e.target.closest('[data-add-table]');
     if(addTableBtn){
-      const nextNumber = getNextTableNumber();
-      await Database.addTable(nextNumber);
-      showToast('Mesa ' + Utils.pad2(nextNumber) + ' adicionada');
+      const number = await Database.addTable();
+      showToast('Mesa ' + Utils.pad2(number) + ' adicionada');
       return render();
+    }
+
+    const reopenBtn = e.target.closest('[data-reopen-table]');
+    if(reopenBtn){
+      await Database.reopenTable(reopenBtn.getAttribute('data-reopen-table'));
+      showToast('Mesa voltou para ocupada');
+      return;
+    }
+
+    const confirmedDec = e.target.closest('[data-confirmed-dec]');
+    if(confirmedDec){
+      await Database.updateConfirmedItem(State.currentTableId, confirmedDec.getAttribute('data-confirmed-dec'), Number(confirmedDec.getAttribute('data-qty')) - 1);
+      showToast('Pedido confirmado atualizado');
+      return;
+    }
+    const confirmedInc = e.target.closest('[data-confirmed-inc]');
+    if(confirmedInc){
+      await Database.updateConfirmedItem(State.currentTableId, confirmedInc.getAttribute('data-confirmed-inc'), Number(confirmedInc.getAttribute('data-qty')) + 1);
+      showToast('Pedido confirmado atualizado');
+      return;
+    }
+    const confirmedRemove = e.target.closest('[data-confirmed-remove]');
+    if(confirmedRemove){
+      const reason = prompt('Motivo da remoção do item confirmado:');
+      if(reason && reason.trim()){
+        await Database.updateConfirmedItem(State.currentTableId, confirmedRemove.getAttribute('data-confirmed-remove'), 0, reason);
+        showToast('Item confirmado removido');
+      }
+      return;
     }
 
     // administração — mesas
@@ -1493,7 +1643,7 @@ function setupEvents(){
       const id = removeTableBtn.getAttribute('data-remove-table');
       if(confirm('Remover esta mesa? Esta ação não pode ser desfeita.')){
         try{ await Database.removeTable(id); showToast('Mesa removida'); }
-        catch(err){ alert(err.message); }
+        catch(err){ showToast(err.message); }
       }
       return;
     }
@@ -1553,10 +1703,9 @@ function setupEvents(){
   app.addEventListener('submit', async (e) => {
     if(e.target.id === 'form-add-table'){
       e.preventDefault();
-      const nextNumber = getNextTableNumber();
-      await Database.addTable(nextNumber);
+      const number = await Database.addTable();
       State.showAddTableForm = false;
-      showToast('Mesa adicionada');
+      showToast('Mesa ' + Utils.pad2(number) + ' adicionada');
       return render();
     }
     if(e.target.id === 'form-product-access'){
@@ -1600,6 +1749,7 @@ async function init(){
     await refreshCache();
     render();
   });
+  Database.subscribeStatus(() => render());
   setupEvents();
   render();
 }
